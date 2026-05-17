@@ -3,6 +3,8 @@ import { createDentalRecord } from '../../actions'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import CIESearch from '@/components/odontology/CIESearch'
+import VitalSignsSection from '@/components/odontology/VitalSignsSection'
+import { OralHygieneFields, FluorosisField, MalocclusionFields, StomatognathicFields, IndiceField } from '@/components/odontology/OralExamSection'
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -140,10 +142,62 @@ export default async function NewForm033Page({ params, searchParams }: Props) {
             </div>
           </div>
 
-          {/* Sección 5: Plan terapéutico */}
+          {/* Sección 5: Signos vitales */}
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
-              5. Plan terapéutico
+              5. Signos vitales
+            </h3>
+            <VitalSignsSection />
+          </div>
+
+          {/* Sección 6: Examen clínico */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
+              6. Examen clínico
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Examen estomatognático</h4>
+                <StomatognathicFields />
+              </div>
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Higiene oral</h4>
+                <OralHygieneFields />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Fluorosis</h4>
+                  <FluorosisField />
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Maloclusión</h4>
+                  <MalocclusionFields />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Sección 7: Índices CPO-D / CEO-D */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
+              7. Índices CPO-D / CEO-D
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">CPO-D (Dentición permanente)</h4>
+                <IndiceField prefix="cpod" />
+              </div>
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">CEO-D (Dentición decidua)</h4>
+                <IndiceField prefix="ceod" />
+              </div>
+            </div>
+          </div>
+
+          {/* Sección 8: Plan terapéutico */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
+              8. Plan terapéutico
             </h3>
             <div>
               <textarea
@@ -155,10 +209,10 @@ export default async function NewForm033Page({ params, searchParams }: Props) {
             </div>
           </div>
 
-          {/* Sección 6: Plan educativo */}
+          {/* Sección 9: Plan educativo */}
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
-              6. Plan educativo
+              9. Plan educativo
             </h3>
             <div>
               <textarea
@@ -170,10 +224,10 @@ export default async function NewForm033Page({ params, searchParams }: Props) {
             </div>
           </div>
 
-          {/* Sección 7: Tratamiento realizado */}
+          {/* Sección 10: Tratamiento realizado */}
           <div>
             <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
-              7. Tratamiento realizado
+              10. Tratamiento realizado
             </h3>
             <div>
               <textarea

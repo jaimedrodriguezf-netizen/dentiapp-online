@@ -81,9 +81,17 @@ export default async function Form033DetailPage({ params }: Props) {
             <Section title="3. Antecedentes personales y familiares" content={record.personal_family_history} />
             <Section title="4. Plan diagnóstico" content={record.diagnostic_plan} />
             <DiagnosisSection content={record.diagnosis} />
-            <Section title="6. Plan terapéutico" content={record.therapeutic_plan} />
-            <Section title="7. Plan educativo" content={record.educational_plan} />
-            <Section title="8. Tratamiento realizado" content={record.treatment} />
+            <VitalSignsView content={record.vital_signs} />
+            <ClinicalExamView
+              stomatognathic={record.stomatognathic_exam}
+              oralHygiene={record.oral_hygiene}
+              fluorosis={record.fluorosis}
+              malocclusion={record.malocclusion}
+            />
+            <IndicesView cpod={record.cpod_index} ceod={record.ceod_index} />
+            <Section title="8. Plan terapéutico" content={record.therapeutic_plan} />
+            <Section title="9. Plan educativo" content={record.educational_plan} />
+            <Section title="10. Tratamiento realizado" content={record.treatment} />
           </div>
         </div>
       </div>
@@ -183,6 +191,112 @@ function DiagnosisSection({ content }: { content: any }) {
       {!code && !notes && (
         <p className="text-sm text-gray-400 italic">Sin diagnóstico registrado</p>
       )}
+    </div>
+  )
+}
+
+function VitalSignsView({ content }: { content: any }) {
+  if (!content) return null
+
+  return (
+    <div>
+      <h3 className="text-sm font-semibold text-gray-700 mb-2">6. Signos vitales</h3>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm text-gray-600">
+        {content.blood_pressure && <div><span className="text-gray-400">TA:</span> {content.blood_pressure}</div>}
+        {content.heart_rate && <div><span className="text-gray-400">FC:</span> {content.heart_rate} lpm</div>}
+        {content.respiratory_rate && <div><span className="text-gray-400">FR:</span> {content.respiratory_rate} rpm</div>}
+        {content.temperature && <div><span className="text-gray-400">Temp:</span> {content.temperature} °C</div>}
+        {content.spo2 && <div><span className="text-gray-400">SpO2:</span> {content.spo2}%</div>}
+        {content.weight && <div><span className="text-gray-400">Peso:</span> {content.weight} kg</div>}
+        {content.height && <div><span className="text-gray-400">Talla:</span> {content.height} cm</div>}
+        {content.bmi && <div><span className="text-gray-400">IMC:</span> {content.bmi}</div>}
+      </div>
+    </div>
+  )
+}
+
+const stomatognathicLabels: Record<string, string> = {
+  labios: 'Labios', mejillas: 'Mejillas', atm: 'ATM',
+  musculos: 'Músculos masticatorios', piso_boca: 'Piso de boca',
+  lengua: 'Lengua', paladar_duro: 'Paladar duro', paladar_blando: 'Paladar blando',
+  gingival: 'Encía', periodontal: 'Periodontal',
+}
+
+function ClinicalExamView({ stomatognathic, oralHygiene, fluorosis, malocclusion }: any) {
+  const hasAny = stomatognathic || oralHygiene || fluorosis || malocclusion
+  if (!hasAny) return null
+
+  const mal = (() => {
+    if (!malocclusion) return {}
+    try { return JSON.parse(malocclusion) } catch { return {} }
+  })()
+
+  const malClassLabels: Record<string, string> = {
+    clase_i: 'Clase I', clase_ii: 'Clase II', clase_iii: 'Clase III',
+  }
+
+  const hygieneLabels: Record<string, string> = {
+    buena: 'Buena', regular: 'Regular', mala: 'Mala',
+  }
+
+  const fluorosisLabels: Record<string, string> = {
+    dudosa: 'Dudosa', muy_leve: 'Muy leve', leve: 'Leve',
+    moderada: 'Moderada', severa: 'Severa',
+  }
+
+  return (
+    <div>
+      <h3 className="text-sm font-semibold text-gray-700 mb-2">7. Examen clínico</h3>
+      <div className="space-y-2 text-sm text-gray-600">
+        {stomatognathic && (
+          <div>
+            <span className="text-gray-400">Estomatognático:</span>{' '}
+            {stomatognathic.split(',').filter(Boolean).map((s: string) => stomatognathicLabels[s] || s).join(', ')}
+          </div>
+        )}
+        {oralHygiene?.rating && (
+          <div>
+            <span className="text-gray-400">Higiene oral:</span> {hygieneLabels[oralHygiene.rating] || oralHygiene.rating}
+            {oralHygiene.plaque_index != null && ` (Índice de placa: ${oralHygiene.plaque_index}%)`}
+          </div>
+        )}
+        {fluorosis && (
+          <div>
+            <span className="text-gray-400">Fluorosis:</span> {fluorosisLabels[fluorosis] || fluorosis}
+          </div>
+        )}
+        {mal?.class && (
+          <div>
+            <span className="text-gray-400">Maloclusión:</span> {malClassLabels[mal.class] || mal.class}
+            {mal.overjet != null && ` | Overjet: ${mal.overjet}mm`}
+            {mal.overbite != null && ` | Overbite: ${mal.overbite}mm`}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function IndicesView({ cpod, ceod }: { cpod: any; ceod: any }) {
+  if (!cpod && !ceod) return null
+
+  return (
+    <div>
+      <h3 className="text-sm font-semibold text-gray-700 mb-2">7. Índices CPO-D / CEO-D</h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-600">
+        {cpod && (
+          <div className="bg-gray-50 rounded-lg p-3">
+            <span className="font-medium text-gray-800">CPO-D</span>
+            <div className="mt-1">C: {cpod.caries} | P: {cpod.missing} | O: {cpod.filled} | Total: {cpod.total}</div>
+          </div>
+        )}
+        {ceod && (
+          <div className="bg-gray-50 rounded-lg p-3">
+            <span className="font-medium text-gray-800">CEO-D</span>
+            <div className="mt-1">C: {ceod.caries} | E: {ceod.extraction} | O: {ceod.filled} | Total: {ceod.total}</div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

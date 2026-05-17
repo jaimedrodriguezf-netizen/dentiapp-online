@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import CIESearch from '@/components/odontology/CIESearch'
 import PrescriptionManager from '@/components/odontology/PrescriptionManager'
+import VitalSignsSection from '@/components/odontology/VitalSignsSection'
+import { OralHygieneFields, FluorosisField, MalocclusionFields, StomatognathicFields, IndiceField } from '@/components/odontology/OralExamSection'
 
 interface Props {
   params: Promise<{ slug: string; id: string }>
@@ -24,6 +26,12 @@ export default async function EditForm033Page({ params }: Props) {
   }
 
   const getText = (val: any) => (typeof val === 'object' && val !== null ? val.text : val) || ''
+
+  // Parse malocclusion JSON string
+  const mal = (() => {
+    if (!record.malocclusion) return {}
+    try { return JSON.parse(record.malocclusion) } catch { return {} }
+  })()
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -93,20 +101,80 @@ export default async function EditForm033Page({ params }: Props) {
               </div>
             </div>
           </div>
+
+          {/* 5. Signos vitales */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-2 border-b border-gray-100 pb-1">
+              5. Signos vitales
+            </h3>
+            <VitalSignsSection defaultValues={record.vital_signs} />
+          </div>
+
+          {/* 6. Examen clínico */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-2 border-b border-gray-100 pb-1">
+              6. Examen clínico
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-xs font-medium text-gray-600 mb-1">Examen estomatognático</h4>
+                <StomatognathicFields defaultValues={record.stomatognathic_exam?.split(',').filter(Boolean)} />
+              </div>
+              <div>
+                <h4 className="text-xs font-medium text-gray-600 mb-1">Higiene oral</h4>
+                <OralHygieneFields
+                  defaultRating={record.oral_hygiene?.rating}
+                  defaultPlaqueIndex={record.oral_hygiene?.plaque_index?.toString()}
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-xs font-medium text-gray-600 mb-1">Fluorosis</h4>
+                  <FluorosisField defaultValue={record.fluorosis} />
+                </div>
+                <div>
+                  <h4 className="text-xs font-medium text-gray-600 mb-1">Maloclusión</h4>
+                  <MalocclusionFields
+                    defaultClass={mal.class}
+                    defaultOverjet={mal.overjet?.toString()}
+                    defaultOverbite={mal.overbite?.toString()}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 7. Índices CPO-D / CEO-D */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-2 border-b border-gray-100 pb-1">
+              7. Índices CPO-D / CEO-D
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-xs font-medium text-gray-600 mb-1">CPO-D (Permanente)</h4>
+                <IndiceField prefix="cpod" defaultValues={record.cpod_index} />
+              </div>
+              <div>
+                <h4 className="text-xs font-medium text-gray-600 mb-1">CEO-D (Decidua)</h4>
+                <IndiceField prefix="ceod" defaultValues={record.ceod_index} />
+              </div>
+            </div>
+          </div>
+
           <SectionEdit
-            title="6. Plan terapéutico"
+            title="8. Plan terapéutico"
             name="therapeutic_plan"
             value={getText(record.therapeutic_plan)}
             rows={3}
           />
           <SectionEdit
-            title="7. Plan educativo"
+            title="9. Plan educativo"
             name="educational_plan"
             value={getText(record.educational_plan)}
             rows={3}
           />
           <SectionEdit
-            title="8. Tratamiento realizado"
+            title="10. Tratamiento realizado"
             name="treatment"
             value={getText(record.treatment)}
             rows={3}

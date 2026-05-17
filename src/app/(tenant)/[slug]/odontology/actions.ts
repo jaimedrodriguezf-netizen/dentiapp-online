@@ -76,6 +76,13 @@ export async function createDentalRecord(slug: string, patientId: string, formDa
       educational_plan: formData.get('educational_plan') as string,
       diagnosis: buildDiagnosis(formData),
       treatment: formData.get('treatment') ? { text: formData.get('treatment') } : null,
+      vital_signs: buildVitalSigns(formData),
+      oral_hygiene: buildOralHygiene(formData),
+      stomatognathic_exam: (formData.get('stomatognathic_exam') as string) || null,
+      fluorosis: (formData.get('fluorosis') as string) || null,
+      malocclusion: buildMalocclusion(formData),
+      cpod_index: buildIndex(formData, 'cpod'),
+      ceod_index: buildIndex(formData, 'ceod'),
       opening_date: new Date().toISOString().split('T')[0],
     })
     .select()
@@ -100,6 +107,13 @@ export async function updateDentalRecord(slug: string, recordId: string, formDat
       educational_plan: formData.get('educational_plan') as string,
       diagnosis: buildDiagnosis(formData),
       treatment: formData.get('treatment') ? { text: formData.get('treatment') } : null,
+      vital_signs: buildVitalSigns(formData),
+      oral_hygiene: buildOralHygiene(formData),
+      stomatognathic_exam: (formData.get('stomatognathic_exam') as string) || null,
+      fluorosis: (formData.get('fluorosis') as string) || null,
+      malocclusion: buildMalocclusion(formData),
+      cpod_index: buildIndex(formData, 'cpod'),
+      ceod_index: buildIndex(formData, 'ceod'),
     })
     .eq('id', recordId)
 
@@ -121,6 +135,77 @@ function buildDiagnosis(formData: FormData) {
     ...(description && { description }),
     ...(notes && { text: notes }),
   }
+}
+
+/** Build vital_signs JSONB */
+function buildVitalSigns(formData: FormData) {
+  const bp = formData.get('vital_bp') as string
+  const hr = formData.get('vital_hr') as string
+  const rr = formData.get('vital_rr') as string
+  const temp = formData.get('vital_temp') as string
+  const spo2 = formData.get('vital_spo2') as string
+  const weight = formData.get('vital_weight') as string
+  const height = formData.get('vital_height') as string
+
+  const hasAny = bp || hr || rr || temp || spo2 || weight || height
+  if (!hasAny) return null
+
+  const bmi = (weight && height)
+    ? parseFloat((parseFloat(weight) / ((parseFloat(height) / 100) ** 2)).toFixed(1))
+    : undefined
+
+  return {
+    ...(bp && { blood_pressure: bp }),
+    ...(hr && { heart_rate: parseInt(hr) }),
+    ...(rr && { respiratory_rate: parseInt(rr) }),
+    ...(temp && { temperature: parseFloat(temp) }),
+    ...(spo2 && { spo2: parseInt(spo2) }),
+    ...(weight && { weight: parseFloat(weight) }),
+    ...(height && { height: parseFloat(height) }),
+    ...(bmi && { bmi }),
+  }
+}
+
+/** Build oral_hygiene JSONB */
+function buildOralHygiene(formData: FormData) {
+  const rating = formData.get('oral_hygiene_rating') as string
+  const plaqueIndex = formData.get('oral_hygiene_plaque_index') as string
+
+  if (!rating && !plaqueIndex) return null
+
+  return {
+    ...(rating && { rating }),
+    ...(plaqueIndex && { plaque_index: parseInt(plaqueIndex) }),
+  }
+}
+
+/** Build malocclusion text */
+function buildMalocclusion(formData: FormData) {
+  const malClass = formData.get('malocclusion_class') as string
+  const overjet = formData.get('malocclusion_overjet') as string
+  const overbite = formData.get('malocclusion_overbite') as string
+
+  if (!malClass && !overjet && !overbite) return null
+
+  return JSON.stringify({
+    ...(malClass && { class: malClass }),
+    ...(overjet && { overjet: parseFloat(overjet) }),
+    ...(overbite && { overbite: parseFloat(overbite) }),
+  })
+}
+
+/** Build CPO-D or CEO-D JSONB */
+function buildIndex(formData: FormData, prefix: 'cpod' | 'ceod') {
+  const caries = parseInt(formData.get(`${prefix}_caries`) as string) || 0
+  const missing = parseInt(formData.get(`${prefix}_missing`) as string) || 0
+  const filled = parseInt(formData.get(`${prefix}_filled`) as string) || 0
+
+  if (!caries && !missing && !filled) return null
+
+  const total = caries + missing + filled
+  return prefix === 'cpod'
+    ? { caries, missing, filled, total }
+    : { caries, extraction: missing, filled, total }
 }
 
 /* ───────── Prescriptions (recetas) ───────── */
