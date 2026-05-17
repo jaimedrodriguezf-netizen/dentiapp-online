@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { Tooth, FileText, Activity, ArrowRight } from 'lucide-react'
+import { FileText, Activity, ArrowRight } from 'lucide-react'
+import { Tooth } from '@/components/ui/ToothIcon'
 
 interface Props {
   params: Promise<{ slug: string }>
