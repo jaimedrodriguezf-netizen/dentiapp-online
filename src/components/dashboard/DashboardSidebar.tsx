@@ -13,6 +13,7 @@ import {
   Shield,
 } from 'lucide-react'
 import { Tooth as ToothIcon } from '@/components/ui/ToothIcon'
+import { APP_VERSION } from '@/lib/version'
 import { logout } from '@/app/(auth)/actions'
 
 interface Tenant {
@@ -86,6 +87,9 @@ export default function DashboardSidebar({ role, tenant }: DashboardSidebarProps
             Cerrar sesión
           </button>
         </form>
+        <div className="mt-3 text-center text-xs text-gray-400">
+          v{APP_VERSION}
+        </div>
       </div>
     </aside>
   )
