@@ -79,7 +79,7 @@ export default async function Form033DetailPage({ params }: Props) {
             <Section title="2. Problema actual" content={record.current_problem} />
             <Section title="3. Antecedentes personales y familiares" content={record.personal_family_history} />
             <Section title="4. Plan diagnóstico" content={record.diagnostic_plan} />
-            <Section title="5. Diagnóstico" content={record.diagnosis} />
+            <DiagnosisSection content={record.diagnosis} />
             <Section title="6. Plan terapéutico" content={record.therapeutic_plan} />
             <Section title="7. Plan educativo" content={record.educational_plan} />
             <Section title="8. Tratamiento realizado" content={record.treatment} />
@@ -115,6 +115,32 @@ function Section({ title, content }: { title: string; content: any }) {
     <div>
       <h3 className="text-sm font-semibold text-gray-700 mb-1">{title}</h3>
       <p className="text-sm text-gray-600 whitespace-pre-wrap">{text}</p>
+    </div>
+  )
+}
+
+function DiagnosisSection({ content }: { content: any }) {
+  if (!content) return null
+
+  const code = content.code
+  const description = content.description
+  const notes = content.text
+
+  return (
+    <div>
+      <h3 className="text-sm font-semibold text-gray-700 mb-1">5. Diagnóstico (CIE-10)</h3>
+      {code && (
+        <div className="flex items-center gap-2 mb-2">
+          <span className="inline-flex items-center rounded-md bg-blue-50 px-2.5 py-0.5 text-xs font-mono font-medium text-blue-700 border border-blue-200">
+            {code}
+          </span>
+          {description && <span className="text-sm text-gray-700">{description}</span>}
+        </div>
+      )}
+      {notes && <p className="text-sm text-gray-600 whitespace-pre-wrap">{notes}</p>}
+      {!code && !notes && (
+        <p className="text-sm text-gray-400 italic">Sin diagnóstico registrado</p>
+      )}
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import { getDentalRecord, updateDentalRecord } from '../../../actions'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import CIESearch from '@/components/odontology/CIESearch'
 
 interface Props {
   params: Promise<{ slug: string; id: string }>
@@ -66,12 +67,31 @@ export default async function EditForm033Page({ params }: Props) {
             value={getText(record.diagnostic_plan)}
             rows={3}
           />
-          <SectionEdit
-            title="5. Diagnóstico"
-            name="diagnosis"
-            value={getText(record.diagnosis)}
-            rows={3}
-          />
+          {/* Diagnóstico con CIE-10 */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-700 mb-2 border-b border-gray-100 pb-1">
+              5. Diagnóstico <span className="text-xs font-normal text-gray-400">(CIE-10)</span>
+            </h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Código CIE-10</label>
+                <CIESearch
+                  defaultCode={record.diagnosis?.code || ''}
+                  defaultDescription={record.diagnosis?.description || ''}
+                  onSelect={() => {}}
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Notas clínicas</label>
+                <textarea
+                  name="diagnosis_notes"
+                  defaultValue={record.diagnosis?.text || getText(record.diagnosis) || ''}
+                  className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  rows={3}
+                />
+              </div>
+            </div>
+          </div>
           <SectionEdit
             title="6. Plan terapéutico"
             name="therapeutic_plan"

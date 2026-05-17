@@ -74,7 +74,7 @@ export async function createDentalRecord(slug: string, patientId: string, formDa
       diagnostic_plan: formData.get('diagnostic_plan') as string,
       therapeutic_plan: formData.get('therapeutic_plan') as string,
       educational_plan: formData.get('educational_plan') as string,
-      diagnosis: formData.get('diagnosis') ? { text: formData.get('diagnosis') } : null,
+      diagnosis: buildDiagnosis(formData),
       treatment: formData.get('treatment') ? { text: formData.get('treatment') } : null,
       opening_date: new Date().toISOString().split('T')[0],
     })
@@ -98,7 +98,7 @@ export async function updateDentalRecord(slug: string, recordId: string, formDat
       diagnostic_plan: formData.get('diagnostic_plan') as string,
       therapeutic_plan: formData.get('therapeutic_plan') as string,
       educational_plan: formData.get('educational_plan') as string,
-      diagnosis: formData.get('diagnosis') ? { text: formData.get('diagnosis') } : null,
+      diagnosis: buildDiagnosis(formData),
       treatment: formData.get('treatment') ? { text: formData.get('treatment') } : null,
     })
     .eq('id', recordId)
@@ -106,6 +106,21 @@ export async function updateDentalRecord(slug: string, recordId: string, formDat
   if (error) return { error: error.message }
 
   redirect(`/${slug}/odontology/form-033/${recordId}`)
+}
+
+/** Build structured diagnosis JSONB from CIE-10 fields + clinical notes */
+function buildDiagnosis(formData: FormData) {
+  const code = formData.get('diagnosis_code') as string
+  const description = formData.get('diagnosis_description') as string
+  const notes = formData.get('diagnosis_notes') as string
+
+  if (!code && !notes) return null
+
+  return {
+    ...(code && { code }),
+    ...(description && { description }),
+    ...(notes && { text: notes }),
+  }
 }
 
 export async function getOdontogramTeeth(slug: string, recordId: string) {
