@@ -1,34 +1,54 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Printer } from 'lucide-react'
 
-export default function PrintContent({ record, teeth, prescriptions, slug, id }: any) {
+interface PrintContentProps {
+  record: Record<string, any>
+  teeth: any[]
+  prescriptions: any[]
+  slug: string
+  id: string
+}
+
+export default function PrintContent({ record, prescriptions, slug, id }: PrintContentProps) {
   const printRef = useRef<HTMLDivElement>(null)
   const hasTriggered = useRef(false)
 
-  useEffect(() => {
-    if (hasTriggered.current) return
-    hasTriggered.current = true
-
-    // Small delay to ensure DOM is ready
-    const timer = setTimeout(() => {
-      renderPrint()
-    }, 300)
-
-    return () => clearTimeout(timer)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  function renderPrint() {
+  const renderPrint = useCallback(() => {
     const el = printRef.current
     if (!el) return
 
-    const patient = record.patients as any
-    const vs = record.vital_signs
-    const oh = record.oral_hygiene
-    const mal = (() => { try { return record.malocclusion ? JSON.parse(record.malocclusion) : null } catch { return null } })()
+    const patient = record.patients as Record<string, any> | undefined
+    const vs = record.vital_signs as Record<string, any> | null
+    const oh = record.oral_hygiene as Record<string, any> | null
+    const mal = (() => {
+      try { return record.malocclusion ? JSON.parse(record.malocclusion) as Record<string, any> : null } catch { return null }
+    })()
+
+    function esc(text: string | null | undefined): string {
+      if (!text) return ''
+      const div = document.createElement('div')
+      div.textContent = text
+      return div.innerHTML
+    }
+
+    function sec(title: string, content: unknown) {
+      const text = typeof content === 'object' && content !== null
+        ? (content as Record<string, any>).text as string | undefined
+        : content as string | undefined
+      if (!text) return ''
+      return `<div class="print-section"><h3>${esc(title)}</h3><p>${esc(text)}</p></div>`
+    }
+
+    function diag(diag: Record<string, any> | null | undefined) {
+      if (!diag) return ''
+      if (diag.code) {
+        return `<div class="print-section"><h3>6. Diagnóstico (CIE-10)</h3><p><span class="print-chip">${esc(diag.code)}</span> ${esc(diag.description || '')}</p>${diag.text ? `<p>${esc(diag.text)}</p>` : ''}</div>`
+      }
+      return sec('6. Diagnóstico', diag)
+    }
 
     el.innerHTML = `
       <style>
@@ -70,7 +90,6 @@ export default function PrintContent({ record, teeth, prescriptions, slug, id }:
       ${sec('2. Problema actual', record.current_problem?.text || record.current_problem)}
       ${sec('3. Antecedentes personales y familiares', record.personal_family_history)}
       ${sec('4. Plan diagnóstico', record.diagnostic_plan)}
-
       ${diag(record.diagnosis)}
 
       <div class="print-section">
@@ -112,7 +131,7 @@ export default function PrintContent({ record, teeth, prescriptions, slug, id }:
       ${prescriptions.length > 0 ? `
       <div class="print-section">
         <h3>Receta médica</h3>
-        ${prescriptions.map((rx: any) => `
+        ${prescriptions.map((rx: Record<string, any>) => `
           <div class="print-rx">
             <h4>${esc(rx.medication_name)}</h4>
             <p>${[rx.dosage, rx.frequency, rx.duration].filter(Boolean).join(' — ')}${rx.quantity ? ` | Cant: ${rx.quantity}` : ''}</p>
@@ -131,29 +150,19 @@ export default function PrintContent({ record, teeth, prescriptions, slug, id }:
       </div>
     `
 
-    // Auto-trigger print
     setTimeout(() => window.print(), 100)
-  }
+  }, [record, prescriptions])
 
-  function sec(title: string, content: any) {
-    const text = typeof content === 'object' && content !== null ? content.text : content
-    if (!text) return ''
-    return `<div class="print-section"><h3>${esc(title)}</h3><p>${esc(text)}</p></div>`
-  }
+  useEffect(() => {
+    if (hasTriggered.current) return
+    hasTriggered.current = true
 
-  function diag(diag: any) {
-    if (!diag) return ''
-    if (diag.code) {
-      return `<div class="print-section"><h3>6. Diagnóstico (CIE-10)</h3><p><span class="print-chip">${esc(diag.code)}</span> ${esc(diag.description || '')}</p>${diag.text ? `<p>${esc(diag.text)}</p>` : ''}</div>`
-    }
-    return sec('6. Diagnóstico', diag)
-  }
+    const timer = setTimeout(() => {
+      renderPrint()
+    }, 300)
 
-  function esc(text: string): string {
-    const div = document.createElement('div')
-    div.textContent = text
-    return div.innerHTML
-  }
+    return () => clearTimeout(timer)
+  }, [renderPrint])
 
   return (
     <div>

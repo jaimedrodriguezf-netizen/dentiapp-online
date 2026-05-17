@@ -34,6 +34,7 @@ export default function BookingForm({ slug }: BookingFormProps) {
   )
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchBusySlots(selectedDate)
   }, [selectedDate, fetchBusySlots])
 

@@ -26,7 +26,7 @@ export function OralHygieneFields({ defaultRating, defaultPlaqueIndex }: OralHyg
         </select>
       </div>
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Índice de placa (O'Leary)</label>
+        <label className="block text-xs font-medium text-gray-600 mb-1">Índice de placa (O&apos;Leary)</label>
         <input
           type="number"
           name="oral_hygiene_plaque_index"

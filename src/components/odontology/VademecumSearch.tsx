@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Search, X, Pill } from 'lucide-react'
+import { Pill, X } from 'lucide-react'
 
 interface MedItem {
   id: string

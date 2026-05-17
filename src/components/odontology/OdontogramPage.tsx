@@ -21,10 +21,6 @@ interface Props {
 
 const statusOptions = Object.keys(toothColors).filter(s => s !== 'multiple')
 
-const surfaceNames: Record<string, string> = {
-  V: 'Vestibular', D: 'Distal', M: 'Mesial', L: 'Lingual', O: 'Oclusal',
-}
-
 export default function OdontogramPage({ recordId, slug, initialTeeth, recordPatientName }: Props) {
   const [teeth, setTeeth] = useState<ToothData[]>(initialTeeth)
   const [selectedTooth, setSelectedTooth] = useState<number | null>(null)

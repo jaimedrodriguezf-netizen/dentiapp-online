@@ -8,7 +8,6 @@ interface ToothSVGProps {
 
 export default function ToothSVG({ toothNumber, status, size = 80 }: ToothSVGProps) {
   const isUpper = toothNumber >= 11 && toothNumber <= 28
-  const isLower = !isUpper
 
   return (
     <svg width={size} height={size * 1.2} viewBox="0 0 80 96">

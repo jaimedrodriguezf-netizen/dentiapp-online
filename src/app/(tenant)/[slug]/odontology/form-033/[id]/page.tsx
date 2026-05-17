@@ -1,4 +1,4 @@
-import { getDentalRecord, getPatient, getPrescriptions } from '../../actions'
+import { getDentalRecord, getPrescriptions } from '../../actions'
 import Link from 'next/link'
 import { ArrowLeft, Edit, Printer, Activity, FileText, Pill } from 'lucide-react'
 

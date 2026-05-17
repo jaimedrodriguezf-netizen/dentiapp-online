@@ -1,7 +1,5 @@
 import { describe, it, expect } from 'vitest'
 
-/* ─── Surface constants ─── */
-const SURFACES = ['V', 'D', 'M', 'L', 'O'] as const
 const DEFAULT_SURFACES: Record<string, string> = { V: 'healthy', D: 'healthy', M: 'healthy', L: 'healthy', O: 'healthy' }
 
 function isDeciduous(tooth: number): boolean {
