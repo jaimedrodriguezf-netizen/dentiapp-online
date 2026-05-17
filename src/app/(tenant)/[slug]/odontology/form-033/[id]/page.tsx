@@ -139,6 +139,14 @@ export default async function Form033DetailPage({ params }: Props) {
 
       <div className="flex justify-center gap-3">
         <Link
+          href={`/${slug}/odontology/form-033/${id}/print`}
+          target="_blank"
+          className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-6 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+        >
+          <Printer className="w-4 h-4" />
+          Imprimir
+        </Link>
+        <Link
           href={`/${slug}/odontology/odontogram/${id}`}
           className="inline-flex items-center gap-2 rounded-lg border border-blue-300 px-6 py-2.5 text-sm font-semibold text-blue-600 hover:bg-blue-50 transition-colors"
         >
