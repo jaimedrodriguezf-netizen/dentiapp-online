@@ -123,6 +123,67 @@ function buildDiagnosis(formData: FormData) {
   }
 }
 
+/* ───────── Prescriptions (recetas) ───────── */
+
+export async function getPrescriptions(slug: string, recordId: string) {
+  const supabase = await createClient()
+  const tenantId = await getTenantId(slug)
+  if (!tenantId) return []
+
+  const { data } = await supabase
+    .from('prescriptions')
+    .select('*')
+    .eq('dental_record_id', recordId)
+    .eq('tenant_id', tenantId)
+    .order('created_at')
+
+  return data ?? []
+}
+
+export async function savePrescriptions(
+  slug: string,
+  recordId: string,
+  items: {
+    medication_id?: string | null
+    medication_name: string
+    dosage: string
+    frequency: string
+    duration: string
+    instructions: string
+    quantity: number | null
+  }[]
+) {
+  const supabase = await createClient()
+  const tenantId = await getTenantId(slug)
+  if (!tenantId) return { error: 'No tienes una clínica activa' }
+
+  // Delete existing and re-insert (simplest for small sets)
+  await supabase
+    .from('prescriptions')
+    .delete()
+    .eq('dental_record_id', recordId)
+    .eq('tenant_id', tenantId)
+
+  if (items.length === 0) return { success: true }
+
+  const { error } = await supabase.from('prescriptions').insert(
+    items.map((item) => ({
+      dental_record_id: recordId,
+      tenant_id: tenantId,
+      medication_id: item.medication_id || null,
+      medication_name: item.medication_name,
+      dosage: item.dosage,
+      frequency: item.frequency,
+      duration: item.duration,
+      instructions: item.instructions,
+      quantity: item.quantity,
+    }))
+  )
+
+  if (error) return { error: error.message }
+  return { success: true }
+}
+
 export async function getOdontogramTeeth(slug: string, recordId: string) {
   const supabase = await createClient()
   const tenantId = await getTenantId(slug)

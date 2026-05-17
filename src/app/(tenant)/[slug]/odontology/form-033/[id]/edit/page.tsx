@@ -2,6 +2,7 @@ import { getDentalRecord, updateDentalRecord } from '../../../actions'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import CIESearch from '@/components/odontology/CIESearch'
+import PrescriptionManager from '@/components/odontology/PrescriptionManager'
 
 interface Props {
   params: Promise<{ slug: string; id: string }>
@@ -127,6 +128,13 @@ export default async function EditForm033Page({ params }: Props) {
           </div>
         </div>
       </form>
+
+      {/* Prescription section */}
+      <div className="card bg-white border border-gray-200 shadow-sm">
+        <div className="card-body p-6">
+          <PrescriptionManager slug={slug} recordId={id} />
+        </div>
+      </div>
     </div>
   )
 }

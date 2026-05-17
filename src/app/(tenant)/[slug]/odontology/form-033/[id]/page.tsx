@@ -1,6 +1,6 @@
-import { getDentalRecord, getPatient } from '../../actions'
+import { getDentalRecord, getPatient, getPrescriptions } from '../../actions'
 import Link from 'next/link'
-import { ArrowLeft, Edit, Printer, Activity } from 'lucide-react'
+import { ArrowLeft, Edit, Printer, Activity, FileText, Pill } from 'lucide-react'
 
 interface Props {
   params: Promise<{ slug: string; id: string }>
@@ -9,6 +9,7 @@ interface Props {
 export default async function Form033DetailPage({ params }: Props) {
   const { slug, id } = await params
   const record = await getDentalRecord(slug, id)
+  const prescriptions = await getPrescriptions(slug, id)
 
   if (!record) {
     return (
@@ -86,6 +87,47 @@ export default async function Form033DetailPage({ params }: Props) {
           </div>
         </div>
       </div>
+
+      {/* Prescriptions */}
+      {prescriptions.length > 0 && (
+        <div className="card bg-white border border-gray-200 shadow-sm">
+          <div className="card-body p-6">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2 mb-4">
+              <FileText className="w-5 h-5 text-gray-400" />
+              Receta médica
+            </h3>
+            <div className="space-y-3">
+              {prescriptions.map((rx: any) => (
+                <div key={rx.id} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <div className="flex items-start gap-3">
+                    <Pill className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900">{rx.medication_name}</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2 text-sm text-gray-600">
+                        {rx.dosage && (
+                          <div><span className="text-gray-400">Dosis:</span> {rx.dosage}</div>
+                        )}
+                        {rx.frequency && (
+                          <div><span className="text-gray-400">Frecuencia:</span> {rx.frequency}</div>
+                        )}
+                        {rx.duration && (
+                          <div><span className="text-gray-400">Duración:</span> {rx.duration}</div>
+                        )}
+                        {rx.quantity && (
+                          <div><span className="text-gray-400">Cantidad:</span> {rx.quantity} unidades</div>
+                        )}
+                      </div>
+                      {rx.instructions && (
+                        <p className="text-sm text-gray-500 mt-1 italic">{rx.instructions}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex justify-center gap-3">
         <Link
