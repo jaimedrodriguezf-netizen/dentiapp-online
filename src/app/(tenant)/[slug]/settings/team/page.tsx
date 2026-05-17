@@ -58,7 +58,7 @@ export default async function TeamSettingsPage({ params }: Props) {
                         )}
                       </p>
                       {member.role && (
-                        <form action={(fd) => { updateMemberRole(slug, member.id, fd); }} className="mt-0.5">
+                        <form action={updateMemberRole.bind(null, slug, member.id) as unknown as (fd: FormData) => Promise<void>} className="mt-0.5">
                           <select
                             name="role"
                             defaultValue={member.role}
@@ -76,7 +76,7 @@ export default async function TeamSettingsPage({ params }: Props) {
                     </div>
                   </div>
                   {!isCurrentUser && member.role !== 'ceo' && (
-                    <form action={(fd) => { removeMember(slug, member.id); }}>
+                    <form action={removeMember.bind(null, slug, member.id) as unknown as (fd: FormData) => Promise<void>}>
                       <button
                         type="submit"
                         className="text-gray-400 hover:text-red-600 transition-colors p-1"

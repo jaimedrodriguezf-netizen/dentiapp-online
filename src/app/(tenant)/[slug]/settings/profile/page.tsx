@@ -28,7 +28,7 @@ export default async function ProfileSettingsPage({ params }: Props) {
           <h3 className="text-lg font-semibold text-gray-900 mb-1">Clínica</h3>
           <p className="text-sm text-gray-500 mb-5">Datos generales de tu clínica dental</p>
 
-          <form action={(fd) => { updateClinic(slug, fd); }} className="space-y-4">
+          <form action={updateClinic.bind(null, slug) as unknown as (fd: FormData) => Promise<void>} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de la clínica</label>
               <input

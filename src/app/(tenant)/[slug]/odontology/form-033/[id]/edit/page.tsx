@@ -51,7 +51,7 @@ export default async function EditForm033Page({ params }: Props) {
         </div>
       </div>
 
-      <form action={(fd) => { updateDentalRecord(slug, id, fd); }} className="card bg-white border border-gray-200 shadow-sm">
+      <form action={updateDentalRecord.bind(null, slug, id) as unknown as (fd: FormData) => Promise<void>} className="card bg-white border border-gray-200 shadow-sm">
         <div className="card-body space-y-6">
           <SectionEdit
             title="1. Motivo de consulta"

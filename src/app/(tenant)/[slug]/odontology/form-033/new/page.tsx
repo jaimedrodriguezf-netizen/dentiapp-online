@@ -61,7 +61,7 @@ export default async function NewForm033Page({ params, searchParams }: Props) {
         </div>
       </div>
 
-      <form action={(fd) => { createDentalRecord(slug, patientId!, fd); }} className="card bg-white border border-gray-200 shadow-sm">
+      <form action={createDentalRecord.bind(null, slug, patientId!) as unknown as (fd: FormData) => Promise<void>} className="card bg-white border border-gray-200 shadow-sm">
         <div className="card-body space-y-6">
           {/* Sección 1: Motivo y problema */}
           <div>

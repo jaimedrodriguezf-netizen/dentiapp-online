@@ -26,7 +26,7 @@ export default async function NewAppointmentPage({ params }: Props) {
         </div>
       </div>
 
-      <form action={(fd) => { createAppointment(slug, fd); }} className="card bg-white border border-gray-200 shadow-sm">
+      <form action={createAppointment.bind(null, slug) as unknown as (fd: FormData) => Promise<void>} className="card bg-white border border-gray-200 shadow-sm">
         <div className="card-body space-y-5">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Paciente *</label>
