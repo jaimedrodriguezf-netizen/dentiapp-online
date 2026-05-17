@@ -125,6 +125,11 @@ export default async function ProfileSettingsPage({ params }: Props) {
           </div>
         </Link>
       </div>
+
+      {/* Version */}
+      <div className="text-center text-xs text-gray-400 pt-4 pb-2">
+        DentiApp Online v1.0.0
+      </div>
     </div>
   )
 }
