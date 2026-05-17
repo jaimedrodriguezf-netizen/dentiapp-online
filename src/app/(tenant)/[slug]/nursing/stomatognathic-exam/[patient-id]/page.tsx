@@ -37,7 +37,7 @@ export default async function StomatognathicExamPage({ params }: Props) {
         </div>
       </div>
 
-      <form action={saveStomatognathicExam.bind(null, slug, patientId)} className="card bg-white border border-gray-200 shadow-sm">
+      <form action={(fd) => { saveStomatognathicExam(slug, patientId, fd); }} className="card bg-white border border-gray-200 shadow-sm">
         <div className="card-body space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="ATM (Articulación Temporomandibular)" name="tmj" value={g('tmj')} />

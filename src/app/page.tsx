@@ -51,7 +51,7 @@ function FloatingElement({
 // Animated counter component
 function AnimatedCounter({ end, suffix = '', prefix = '' }: { end: number; suffix?: string; prefix?: string }) {
   const ref = useRef(null)
-  const { isInView } = useInView(ref, { once: true })
+  const isInView = useInView(ref, { once: true })
   const count = useCount(isInView ? end : 0)
 
   return (

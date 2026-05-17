@@ -41,7 +41,8 @@ export async function proxy(request: NextRequest) {
       .single()
 
     if (membership) {
-      const dashboardUrl = new URL(`/${membership.tenants.slug}/dashboard`, request.url)
+      const tenantSlug = (membership.tenants as unknown as { slug: string }).slug
+      const dashboardUrl = new URL(`/${tenantSlug}/dashboard`, request.url)
       return NextResponse.redirect(dashboardUrl)
     }
   }

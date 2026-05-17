@@ -28,7 +28,8 @@ export async function login(formData: FormData) {
       .single()
 
     if (membership) {
-      redirect(`/${membership.tenants.slug}/dashboard`)
+      const tenantSlug = (membership.tenants as unknown as { slug: string }).slug
+      redirect(`/${tenantSlug}/dashboard`)
     }
   }
 

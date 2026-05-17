@@ -38,8 +38,9 @@ export default async function TeamSettingsPage({ params }: Props) {
         <div className="card-body p-0">
           <div className="divide-y divide-gray-100">
             {members.map((member) => {
-              const memberUser = member.users as Record<string, unknown> | null
-              const isCurrentUser = memberUser && (memberUser as any).id === user?.id
+              const userArr = member.users as unknown as { id: string; email: string }[]
+              const memberUser = userArr?.[0] ?? null
+              const isCurrentUser = memberUser?.id === user?.id
 
               return (
                 <div key={member.id} className="flex items-center justify-between p-4">
@@ -57,7 +58,7 @@ export default async function TeamSettingsPage({ params }: Props) {
                         )}
                       </p>
                       {member.role && (
-                        <form action={updateMemberRole.bind(null, slug, member.id)} className="mt-0.5">
+                        <form action={(fd) => { updateMemberRole(slug, member.id, fd); }} className="mt-0.5">
                           <select
                             name="role"
                             defaultValue={member.role}
@@ -75,7 +76,7 @@ export default async function TeamSettingsPage({ params }: Props) {
                     </div>
                   </div>
                   {!isCurrentUser && member.role !== 'ceo' && (
-                    <form action={removeMember.bind(null, slug, member.id)}>
+                    <form action={(fd) => { removeMember(slug, member.id); }}>
                       <button
                         type="submit"
                         className="text-gray-400 hover:text-red-600 transition-colors p-1"

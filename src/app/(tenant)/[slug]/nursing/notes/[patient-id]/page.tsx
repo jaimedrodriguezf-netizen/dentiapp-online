@@ -34,7 +34,7 @@ export default async function NursingNotesPage({ params }: Props) {
         </div>
       </div>
 
-      <form action={saveNursingNote.bind(null, slug, patientId)} className="card bg-white border border-gray-200 shadow-sm">
+      <form action={(fd) => { saveNursingNote(slug, patientId, fd); }} className="card bg-white border border-gray-200 shadow-sm">
         <div className="card-body p-4">
           <textarea name="content" required rows={3}
             placeholder="Escribí la nota de enfermería..."

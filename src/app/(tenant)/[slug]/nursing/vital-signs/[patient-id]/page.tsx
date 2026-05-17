@@ -38,7 +38,7 @@ export default async function VitalSignsFormPage({ params }: Props) {
         </div>
       </div>
 
-      <form action={saveVitalSigns.bind(null, slug, patientId)} className="card bg-white border border-gray-200 shadow-sm">
+      <form action={(fd) => { saveVitalSigns(slug, patientId, fd); }} className="card bg-white border border-gray-200 shadow-sm">
         <div className="card-body space-y-5">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <div>

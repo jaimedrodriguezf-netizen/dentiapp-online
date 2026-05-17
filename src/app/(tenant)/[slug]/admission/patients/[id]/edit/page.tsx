@@ -37,7 +37,7 @@ export default async function EditPatientPage({ params }: Props) {
         </div>
       </div>
 
-      <form action={updatePatient.bind(null, slug, id)} className="card bg-white border border-gray-200 shadow-sm">
+      <form action={(fd) => { updatePatient(slug, id, fd); }} className="card bg-white border border-gray-200 shadow-sm">
         <div className="card-body space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
