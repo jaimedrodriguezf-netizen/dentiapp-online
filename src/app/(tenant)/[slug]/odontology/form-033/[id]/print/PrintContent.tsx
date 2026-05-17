@@ -27,10 +27,10 @@ export default function PrintContent({ record, prescriptions, slug, id }: PrintC
       try { return record.malocclusion ? JSON.parse(record.malocclusion) as Record<string, any> : null } catch { return null }
     })()
 
-    function esc(text: string | null | undefined): string {
-      if (!text) return ''
+    function esc(text: string | number | null | undefined): string {
+      if (text == null) return ''
       const div = document.createElement('div')
-      div.textContent = text
+      div.textContent = String(text)
       return div.innerHTML
     }
 
@@ -81,8 +81,8 @@ export default function PrintContent({ record, prescriptions, slug, id }: PrintC
         <div class="print-grid">
           <div><span class="print-label">Paciente:</span> ${esc(patient?.first_name || '')} ${esc(patient?.last_name || '')}</div>
           <div><span class="print-label">Cédula:</span> ${esc(patient?.cedula || '—')}</div>
-          <div><span class="print-label">Apertura:</span> ${record.opening_date || '—'}</div>
-          <div><span class="print-label">Control:</span> ${record.control_date || '—'}</div>
+          <div><span class="print-label">Apertura:</span> ${esc(record.opening_date)}</div>
+          <div><span class="print-label">Control:</span> ${esc(record.control_date)}</div>
         </div>
       </div>
 
@@ -96,13 +96,13 @@ export default function PrintContent({ record, prescriptions, slug, id }: PrintC
         <h3>5. Signos vitales</h3>
         ${vs ? `<div class="print-grid">${[
           vs.blood_pressure && `<div><span class="print-label">TA:</span> ${esc(vs.blood_pressure)} mmHg</div>`,
-          vs.heart_rate && `<div><span class="print-label">FC:</span> ${vs.heart_rate} lpm</div>`,
-          vs.respiratory_rate && `<div><span class="print-label">FR:</span> ${vs.respiratory_rate} rpm</div>`,
-          vs.temperature && `<div><span class="print-label">Temp:</span> ${vs.temperature} °C</div>`,
-          vs.spo2 && `<div><span class="print-label">SpO2:</span> ${vs.spo2}%</div>`,
-          vs.weight && `<div><span class="print-label">Peso:</span> ${vs.weight} kg</div>`,
-          vs.height && `<div><span class="print-label">Talla:</span> ${vs.height} cm</div>`,
-          vs.bmi && `<div><span class="print-label">IMC:</span> ${vs.bmi}</div>`,
+          vs.heart_rate && `<div><span class="print-label">FC:</span> ${esc(vs.heart_rate)} lpm</div>`,
+          vs.respiratory_rate && `<div><span class="print-label">FR:</span> ${esc(vs.respiratory_rate)} rpm</div>`,
+          vs.temperature && `<div><span class="print-label">Temp:</span> ${esc(vs.temperature)} °C</div>`,
+          vs.spo2 && `<div><span class="print-label">SpO2:</span> ${esc(vs.spo2)}%</div>`,
+          vs.weight && `<div><span class="print-label">Peso:</span> ${esc(vs.weight)} kg</div>`,
+          vs.height && `<div><span class="print-label">Talla:</span> ${esc(vs.height)} cm</div>`,
+          vs.bmi && `<div><span class="print-label">IMC:</span> ${esc(vs.bmi)}</div>`,
         ].filter(Boolean).join('')}</div>` : '<p>—</p>'}
       </div>
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 
 /* ─── Oral Hygiene ─── */
 
@@ -139,24 +139,21 @@ const stomatognathicStructures = [
 
 export function StomatognathicFields({ defaultValues }: StomatognathicProps) {
   const [selected, setSelected] = useState<string[]>(defaultValues || [])
+  const hiddenRef = useRef<HTMLInputElement>(null)
 
   function toggle(id: string) {
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
-    )
-    // Update the hidden input
-    const input = document.querySelector('input[name="stomatognathic_exam"]') as HTMLInputElement
-    if (input) {
-      const current = selected.includes(id)
-        ? selected.filter((s) => s !== id)
-        : [...selected, id]
-      input.value = current.join(',')
+    const next = selected.includes(id)
+      ? selected.filter((s) => s !== id)
+      : [...selected, id]
+    setSelected(next)
+    if (hiddenRef.current) {
+      hiddenRef.current.value = next.join(',')
     }
   }
 
   return (
     <div>
-      <input type="hidden" name="stomatognathic_exam" defaultValue={selected.join(',')} />
+      <input type="hidden" ref={hiddenRef} name="stomatognathic_exam" defaultValue={selected.join(',')} />
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
         {stomatognathicStructures.map((s) => (
           <button

@@ -26,6 +26,7 @@ export default function OdontogramPage({ recordId, slug, initialTeeth, recordPat
   const [selectedTooth, setSelectedTooth] = useState<number | null>(null)
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   const getTooth = useCallback(
     (toothNumber: number) => teeth.find((t) => t.tooth_number === toothNumber),
@@ -82,24 +83,26 @@ export default function OdontogramPage({ recordId, slug, initialTeeth, recordPat
   async function handleSave() {
     setSaving(true)
     setSuccess(false)
+    setSaveError('')
 
     const supabase = createClient()
+    const { error } = await supabase.from('odontogram_teeth').upsert(
+      teeth.map((tooth) => ({
+        dental_record_id: recordId,
+        tooth_number: tooth.tooth_number,
+        status: tooth.status,
+        surfaces: tooth.surfaces,
+      })),
+      { onConflict: 'dental_record_id,tooth_number' }
+    )
 
-    for (const tooth of teeth) {
-      await supabase.from('odontogram_teeth').upsert(
-        {
-          dental_record_id: recordId,
-          tooth_number: tooth.tooth_number,
-          status: tooth.status,
-          surfaces: tooth.surfaces,
-        },
-        { onConflict: 'dental_record_id,tooth_number' }
-      )
+    if (error) {
+      setSaveError(error.message)
+    } else {
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 2000)
     }
-
     setSaving(false)
-    setSuccess(true)
-    setTimeout(() => setSuccess(false), 2000)
   }
 
   const selectedSurfaces = selectedTooth ? getToothSurfaces(selectedTooth) : null
@@ -133,6 +136,12 @@ export default function OdontogramPage({ recordId, slug, initialTeeth, recordPat
           {success ? 'Guardado ✓' : 'Guardar'}
         </button>
       </div>
+
+      {saveError && (
+        <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+          Error al guardar: {saveError}
+        </div>
+      )}
 
       <div className="card bg-white border border-gray-200 shadow-sm">
         <div className="card-body p-4 sm:p-6">
