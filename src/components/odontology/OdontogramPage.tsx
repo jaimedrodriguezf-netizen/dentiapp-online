@@ -1,15 +1,15 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import OdontogramSVG, { toothColors, toothLabels } from '@/components/odontology/OdontogramSVG'
+import OdontogramSVG, { toothColors, toothLabels, SURFACES, isDeciduous } from '@/components/odontology/OdontogramSVG'
 import Link from 'next/link'
 import { ArrowLeft, Save, Loader2 } from 'lucide-react'
 
 interface ToothData {
   tooth_number: number
   status: string
+  surfaces?: Record<string, string>
 }
 
 interface Props {
@@ -19,22 +19,32 @@ interface Props {
   recordPatientName: string
 }
 
-const statusOptions = Object.keys(toothColors)
+const statusOptions = Object.keys(toothColors).filter(s => s !== 'multiple')
+
+const surfaceNames: Record<string, string> = {
+  V: 'Vestibular', D: 'Distal', M: 'Mesial', L: 'Lingual', O: 'Oclusal',
+}
 
 export default function OdontogramPage({ recordId, slug, initialTeeth, recordPatientName }: Props) {
-  const router = useRouter()
   const [teeth, setTeeth] = useState<ToothData[]>(initialTeeth)
   const [selectedTooth, setSelectedTooth] = useState<number | null>(null)
-  const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
 
-  const getToothStatus = useCallback(
-    (toothNumber: number) => {
-      const tooth = teeth.find((t) => t.tooth_number === toothNumber)
-      return tooth?.status || 'healthy'
-    },
+  const getTooth = useCallback(
+    (toothNumber: number) => teeth.find((t) => t.tooth_number === toothNumber),
     [teeth]
+  )
+
+  const getToothStatus = useCallback(
+    (toothNumber: number) => getTooth(toothNumber)?.status || 'healthy',
+    [getTooth]
+  )
+
+  const getToothSurfaces = useCallback(
+    (toothNumber: number): Record<string, string> =>
+      getTooth(toothNumber)?.surfaces || { V: 'healthy', D: 'healthy', M: 'healthy', L: 'healthy', O: 'healthy' },
+    [getTooth]
   )
 
   function handleToothClick(toothNumber: number) {
@@ -53,34 +63,50 @@ export default function OdontogramPage({ recordId, slug, initialTeeth, recordPat
     })
   }
 
+  function handleSurfaceChange(toothNumber: number, surface: string, status: string) {
+    setTeeth((prev) => {
+      const existing = prev.findIndex((t) => t.tooth_number === toothNumber)
+      const surfaces = existing >= 0
+        ? { ...getToothSurfaces(toothNumber), [surface]: status }
+        : { V: 'healthy', D: 'healthy', M: 'healthy', L: 'healthy', O: 'healthy', [surface]: status }
+
+      // Calculate overall status from surfaces
+      const nonHealthy = Object.values(surfaces).filter(s => s !== 'healthy')
+      const overall = nonHealthy.length === 0 ? 'healthy' : nonHealthy.length === 1 ? nonHealthy[0] : 'multiple'
+
+      if (existing >= 0) {
+        const updated = [...prev]
+        updated[existing] = { tooth_number: toothNumber, status: overall, surfaces }
+        return updated
+      }
+      return [...prev, { tooth_number: toothNumber, status: overall, surfaces }]
+    })
+  }
+
   async function handleSave() {
     setSaving(true)
     setSuccess(false)
 
     const supabase = createClient()
-    const { error } = await supabase.rpc('save_odontogram' as any, {
-      p_record_id: recordId,
-      p_teeth: teeth,
-    })
 
-    if (error) {
-      // Fallback: save one by one
-      for (const tooth of teeth) {
-        await supabase.from('odontogram_teeth').upsert(
-          {
-            dental_record_id: recordId,
-            tooth_number: tooth.tooth_number,
-            status: tooth.status,
-          },
-          { onConflict: 'dental_record_id,tooth_number' }
-        )
-      }
+    for (const tooth of teeth) {
+      await supabase.from('odontogram_teeth').upsert(
+        {
+          dental_record_id: recordId,
+          tooth_number: tooth.tooth_number,
+          status: tooth.status,
+          surfaces: tooth.surfaces,
+        },
+        { onConflict: 'dental_record_id,tooth_number' }
+      )
     }
 
     setSaving(false)
     setSuccess(true)
     setTimeout(() => setSuccess(false), 2000)
   }
+
+  const selectedSurfaces = selectedTooth ? getToothSurfaces(selectedTooth) : null
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -114,7 +140,6 @@ export default function OdontogramPage({ recordId, slug, initialTeeth, recordPat
 
       <div className="card bg-white border border-gray-200 shadow-sm">
         <div className="card-body p-4 sm:p-6">
-          {/* Odontogram SVG */}
           <OdontogramSVG
             teeth={teeth}
             onToothClick={handleToothClick}
@@ -141,9 +166,12 @@ export default function OdontogramPage({ recordId, slug, initialTeeth, recordPat
         <div className="card bg-white border border-gray-200 shadow-sm">
           <div className="card-body p-4">
             <h3 className="font-semibold text-gray-900 mb-3">
-              Diente {selectedTooth} — {toothLabels[getToothStatus(selectedTooth)]}
+              Diente {selectedTooth} {isDeciduous(selectedTooth) && <span className="text-xs font-normal text-gray-400">(deciduo)</span>}
             </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+
+            {/* Overall status */}
+            <p className="text-xs text-gray-500 mb-2">Estado general</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mb-4">
               {statusOptions.map((status) => (
                 <button
                   key={status}
@@ -160,6 +188,25 @@ export default function OdontogramPage({ recordId, slug, initialTeeth, recordPat
                   />
                   {toothLabels[status]}
                 </button>
+              ))}
+            </div>
+
+            {/* Surface selector */}
+            <p className="text-xs text-gray-500 mb-2">Por superficie</p>
+            <div className="grid grid-cols-5 gap-2">
+              {SURFACES.map((surface) => (
+                <div key={surface}>
+                  <p className="text-xs text-center text-gray-400 mb-1">{surface}</p>
+                  <select
+                    value={selectedSurfaces?.[surface] || 'healthy'}
+                    onChange={(e) => handleSurfaceChange(selectedTooth, surface, e.target.value)}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-xs text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    {statusOptions.map((status) => (
+                      <option key={status} value={status}>{toothLabels[status]}</option>
+                    ))}
+                  </select>
+                </div>
               ))}
             </div>
           </div>
