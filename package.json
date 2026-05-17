@@ -9,7 +9,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start -p ${PORT:-3000} -H 0.0.0.0",
-    "lint": "eslint"
+    "lint": "eslint",
+    "release": "npm version patch --no-git-tag-version && node -e \"require('fs').writeFileSync('src/lib/version.ts', 'export const APP_VERSION = \\\"' + require('./package.json').version + '\\\"\\nexport const APP_NAME = \\\"DentiApp Online\\\"\\nexport const APP_DESCRIPTION = \\\"Panel administrativo para clínicas dentales\\\"\\n')\" && git add -A && git commit -m \"chore: bump to v$(node -p \"require('./package.json').version\")\" && git tag \"v$(node -p \"require('./package.json').version\")\" && git push origin main --tags"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

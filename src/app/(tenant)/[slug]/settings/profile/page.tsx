@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { updateClinic } from '../actions'
+import { APP_VERSION } from '@/lib/version'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 
@@ -128,7 +129,7 @@ export default async function ProfileSettingsPage({ params }: Props) {
 
       {/* Version */}
       <div className="text-center text-xs text-gray-400 pt-4 pb-2">
-        DentiApp Online v1.0.0
+        DentiApp Online v{APP_VERSION}
       </div>
     </div>
   )
