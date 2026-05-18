@@ -128,7 +128,7 @@ export default async function NewForm033Page({ params, searchParams }: Props) {
             <div className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Código CIE-10</label>
-                <CIESearch onSelect={() => {}} />
+                <CIESearch />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Notas clínicas</label>

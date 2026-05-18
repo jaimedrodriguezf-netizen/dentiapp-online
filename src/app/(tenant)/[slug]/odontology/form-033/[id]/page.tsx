@@ -1,6 +1,7 @@
-import { getDentalRecord, getPrescriptions } from '../../actions'
+import { getDentalRecord, getPrescriptions, getOdontogramTeeth } from '../../actions'
 import Link from 'next/link'
 import { ArrowLeft, Edit, Printer, Activity, FileText, Pill } from 'lucide-react'
+import OdontogramSVG from '@/components/odontology/OdontogramSVG'
 
 interface Props {
   params: Promise<{ slug: string; id: string }>
@@ -10,6 +11,7 @@ export default async function Form033DetailPage({ params }: Props) {
   const { slug, id } = await params
   const record = await getDentalRecord(slug, id)
   const prescriptions = await getPrescriptions(slug, id)
+  const teeth = await getOdontogramTeeth(slug, id)
 
   if (!record) {
     return (
@@ -137,6 +139,32 @@ export default async function Form033DetailPage({ params }: Props) {
         </div>
       )}
 
+      {/* Odontogram */}
+      <div className="card bg-white border border-gray-200 shadow-sm">
+        <div className="card-body p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Activity className="w-5 h-5 text-gray-400" />
+              Odontograma
+            </h3>
+            <Link
+              href={`/${slug}/odontology/odontogram/${id}`}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors"
+            >
+              <Edit className="w-3.5 h-3.5" />
+              Editar odontograma
+            </Link>
+          </div>
+          {teeth.length > 0 ? (
+            <OdontogramSVG teeth={teeth} />
+          ) : (
+            <p className="text-sm text-gray-400 text-center py-8">
+              No se han registrado dientes aún. Hacé click en "Editar odontograma" para empezar.
+            </p>
+          )}
+        </div>
+      </div>
+
       <div className="flex justify-center gap-3">
         <Link
           href={`/${slug}/odontology/form-033/${id}/print`}
@@ -145,13 +173,6 @@ export default async function Form033DetailPage({ params }: Props) {
         >
           <Printer className="w-4 h-4" />
           Imprimir
-        </Link>
-        <Link
-          href={`/${slug}/odontology/odontogram/${id}`}
-          className="inline-flex items-center gap-2 rounded-lg border border-blue-300 px-6 py-2.5 text-sm font-semibold text-blue-600 hover:bg-blue-50 transition-colors"
-        >
-          <Activity className="w-4 h-4" />
-          Odontograma
         </Link>
         <Link
           href={`/${slug}/odontology/form-033/${id}/edit`}

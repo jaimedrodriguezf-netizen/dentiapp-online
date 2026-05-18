@@ -12,7 +12,7 @@ interface CIECode {
 interface CIESearchProps {
   defaultCode?: string
   defaultDescription?: string
-  onSelect: (code: string, description: string) => void
+  onSelect?: (code: string, description: string) => void
   onClear?: () => void
 }
 
@@ -75,7 +75,7 @@ export default function CIESearch({ defaultCode, defaultDescription, onSelect, o
     setQuery(`${code.code} — ${code.description}`)
     setOpen(false)
     setResults([])
-    onSelect(code.code, code.description)
+    onSelect?.(code.code, code.description)
   }
 
   function handleClear() {

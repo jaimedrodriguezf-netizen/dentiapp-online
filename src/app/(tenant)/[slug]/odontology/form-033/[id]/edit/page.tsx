@@ -1,9 +1,10 @@
-import { getDentalRecord, updateDentalRecord } from '../../../actions'
+import { getDentalRecord, updateDentalRecord, getOdontogramTeeth } from '../../../actions'
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Activity, Edit } from 'lucide-react'
 import CIESearch from '@/components/odontology/CIESearch'
 import PrescriptionManager from '@/components/odontology/PrescriptionManager'
 import VitalSignsSection from '@/components/odontology/VitalSignsSection'
+import OdontogramSVG from '@/components/odontology/OdontogramSVG'
 import { OralHygieneFields, FluorosisField, MalocclusionFields, StomatognathicFields, IndiceField } from '@/components/odontology/OralExamSection'
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
 export default async function EditForm033Page({ params }: Props) {
   const { slug, id } = await params
   const record = await getDentalRecord(slug, id)
+  const teeth = await getOdontogramTeeth(slug, id)
 
   if (!record) {
     return (
@@ -87,7 +89,6 @@ export default async function EditForm033Page({ params }: Props) {
                 <CIESearch
                   defaultCode={record.diagnosis?.code || ''}
                   defaultDescription={record.diagnosis?.description || ''}
-                  onSelect={() => {}}
                 />
               </div>
               <div>
@@ -196,6 +197,32 @@ export default async function EditForm033Page({ params }: Props) {
           </div>
         </div>
       </form>
+
+      {/* Odontogram */}
+      <div className="card bg-white border border-gray-200 shadow-sm">
+        <div className="card-body p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Activity className="w-5 h-5 text-gray-400" />
+              Odontograma
+            </h3>
+            <Link
+              href={`/${slug}/odontology/odontogram/${id}`}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors"
+            >
+              <Edit className="w-3.5 h-3.5" />
+              Editar odontograma
+            </Link>
+          </div>
+          {teeth.length > 0 ? (
+            <OdontogramSVG teeth={teeth} />
+          ) : (
+            <p className="text-sm text-gray-400 text-center py-8">
+              No se han registrado dientes aún. Hacé click en "Editar odontograma" para empezar.
+            </p>
+          )}
+        </div>
+      </div>
 
       {/* Prescription section */}
       <div className="card bg-white border border-gray-200 shadow-sm">
