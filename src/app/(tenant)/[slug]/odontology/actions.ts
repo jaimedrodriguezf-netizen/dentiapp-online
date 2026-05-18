@@ -286,26 +286,23 @@ export async function getOdontogramTeeth(slug: string, recordId: string) {
 export async function saveOdontogramTeeth(
   slug: string,
   recordId: string,
-  teeth: { tooth_number: number; status: string }[]
+  teeth: { tooth_number: number; status: string; surfaces?: Record<string, string> }[]
 ) {
   const supabase = await createClient()
   const tenantId = await getTenantId(slug)
   if (!tenantId) return { error: 'No tienes una clínica activa' }
 
-  // Upsert each tooth
-  for (const tooth of teeth) {
-    const { error } = await supabase.from('odontogram_teeth').upsert(
-      {
-        dental_record_id: recordId,
-        tenant_id: tenantId,
-        tooth_number: tooth.tooth_number,
-        status: tooth.status,
-      },
-      { onConflict: 'dental_record_id,tooth_number' }
-    )
+  const { error } = await supabase.from('odontogram_teeth').upsert(
+    teeth.map((tooth) => ({
+      dental_record_id: recordId,
+      tenant_id: tenantId,
+      tooth_number: tooth.tooth_number,
+      status: tooth.status,
+      surfaces: tooth.surfaces,
+    })),
+    { onConflict: 'dental_record_id,tooth_number' }
+  )
 
-    if (error) return { error: error.message }
-  }
-
+  if (error) return { error: error.message }
   return { success: true }
 }

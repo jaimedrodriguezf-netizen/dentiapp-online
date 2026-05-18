@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { saveOdontogramTeeth } from '@/app/(tenant)/[slug]/odontology/actions'
 import OdontogramSVG, { toothColors, toothLabels, SURFACES, isDeciduous } from '@/components/odontology/OdontogramSVG'
 import Link from 'next/link'
 import { ArrowLeft, Save, Loader2 } from 'lucide-react'
@@ -85,19 +85,10 @@ export default function OdontogramPage({ recordId, slug, initialTeeth, recordPat
     setSuccess(false)
     setSaveError('')
 
-    const supabase = createClient()
-    const { error } = await supabase.from('odontogram_teeth').upsert(
-      teeth.map((tooth) => ({
-        dental_record_id: recordId,
-        tooth_number: tooth.tooth_number,
-        status: tooth.status,
-        surfaces: tooth.surfaces,
-      })),
-      { onConflict: 'dental_record_id,tooth_number' }
-    )
+    const result = await saveOdontogramTeeth(slug, recordId, teeth)
 
-    if (error) {
-      setSaveError(error.message)
+    if (result?.error) {
+      setSaveError(result.error)
     } else {
       setSuccess(true)
       setTimeout(() => setSuccess(false), 2000)
