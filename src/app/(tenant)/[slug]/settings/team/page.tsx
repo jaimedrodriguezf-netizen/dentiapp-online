@@ -8,7 +8,7 @@ interface Props {
 }
 
 const roleLabels: Record<string, string> = {
-  ceo: 'CEO',
+  supervisor: 'Supervisor',
   admin: 'Admin',
   doctor: 'Doctor',
   nurse: 'Enfermero',
@@ -39,7 +39,7 @@ export default async function TeamSettingsPage({ params }: Props) {
           <div className="divide-y divide-gray-100">
             {members.map((member) => {
               const userArr = member.users as unknown as { id: string; email: string }[]
-              const memberUser = userArr?.[0] ?? null
+              const memberUser = (Array.isArray(userArr) ? userArr[0] : userArr) as unknown as { id: string; email: string }
               const isCurrentUser = memberUser?.id === user?.id
 
               return (
@@ -47,36 +47,42 @@ export default async function TeamSettingsPage({ params }: Props) {
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
                       <span className="text-sm font-bold text-blue-600">
-                        {(memberUser && String((memberUser as any).email || 'U')[0].toUpperCase()) || 'U'}
+                        {memberUser?.email?.[0].toUpperCase() || 'U'}
                       </span>
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">
-                        {memberUser && String((memberUser as any).email || 'Usuario')}
+                        {memberUser?.email || 'Usuario'}
                         {isCurrentUser && (
                           <span className="text-xs text-gray-400 ml-2">(vos)</span>
                         )}
                       </p>
                       {member.role && (
-                        <form action={updateMemberRole.bind(null, slug, member.id) as unknown as (fd: FormData) => Promise<void>} className="mt-0.5">
+                        <form action={async (fd: FormData) => {
+                          'use server'
+                          await updateMemberRole(slug, member.id, fd)
+                        }} className="mt-0.5">
                           <select
                             name="role"
                             defaultValue={member.role}
-                            onChange={(e) => e.target.form?.requestSubmit()}
                             className="text-xs border border-gray-200 rounded-md px-2 py-0.5 text-gray-600 focus:border-blue-500 focus:outline-none"
                           >
                             {Object.entries(roleLabels).map(([key, label]) => (
-                              <option key={key} value={key} disabled={key === 'ceo'}>
+                              <option key={key} value={key}>
                                 {label}
                               </option>
                             ))}
                           </select>
+                          <button type="submit" className="hidden"></button>
                         </form>
                       )}
                     </div>
                   </div>
-                  {!isCurrentUser && member.role !== 'ceo' && (
-                    <form action={removeMember.bind(null, slug, member.id) as unknown as (fd: FormData) => Promise<void>}>
+                  {!isCurrentUser && member.role !== 'admin' && (
+                    <form action={async () => {
+                      'use server'
+                      await removeMember(slug, member.id)
+                    }}>
                       <button
                         type="submit"
                         className="text-gray-400 hover:text-red-600 transition-colors p-1"

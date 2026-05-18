@@ -71,25 +71,22 @@ export async function register(formData: FormData) {
       .from('tenants')
       .insert({
         name: `${name}'s Clínica`,
-        slug,
+        slug: slug,
+        plan: 'standard' // Por defecto plan Standard (individual)
       })
       .select()
       .single()
 
     if (tenantError && tenantError.code !== '23505') {
-      // Ignore unique constraint errors, tenant might already exist
       console.error('Tenant creation error:', tenantError)
     }
 
     if (tenant) {
-      await supabase
-        .from('tenant_members')
-        .insert({
-          tenant_id: tenant.id,
-          user_id: data.user.id,
-          role: 'ceo',
-        })
-
+      await supabase.from('tenant_members').insert({
+        tenant_id: tenant.id,
+        user_id: data.user.id,
+        role: 'doctor', // El creador en plan Standard es un Doctor
+      })
       redirect(`/${tenant.slug}/dashboard`)
     } else {
       redirect('/onboarding')

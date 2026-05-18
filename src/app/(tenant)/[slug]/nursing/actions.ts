@@ -1,199 +1,186 @@
-'use server'
-
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
 
-async function getTenantId(slug: string) {
-  const supabase = await createClient()
-  const { data: tenant } = await supabase
-    .from('tenants')
-    .select('id')
-    .eq('slug', slug)
-    .single()
-  return tenant?.id
+interface VitalSignsData {
+  heart_rate: string | null
+  blood_pressure: string | null
+  temperature: string | null
+  oxygen_saturation: string | null
+  respiratory_rate: string | null
+  weight: string | null
+  height: string | null
 }
 
-export async function getPatients(slug: string) {
+interface StomatognathicExamData {
+  lips: string | null
+  cheeks: string | null
+  maxilla: string | null
+  mandible: string | null
+  tongue: string | null
+  palate: string | null
+  floor_of_mouth: string | null
+  salivary_glands: string | null
+  tmj: string | null
+  lymph_nodes: string | null
+}
+
+export async function getPatients(tenantId: string) {
   const supabase = await createClient()
-  const tenantId = await getTenantId(slug)
-  if (!tenantId) return []
-
-  const { data: patients } = await supabase
+  const { data } = await supabase
     .from('patients')
-    .select('id, first_name, last_name, cedula, phone')
+    .select('*')
     .eq('tenant_id', tenantId)
-    .order('created_at', { ascending: false })
-
-  return patients ?? []
+    .order('last_name', { ascending: true })
+  return data || []
 }
 
 export async function getPatient(slug: string, patientId: string) {
   const supabase = await createClient()
-  const tenantId = await getTenantId(slug)
-  if (!tenantId) return null
-
-  const { data: patient } = await supabase
+  const { data } = await supabase
     .from('patients')
     .select('*')
     .eq('id', patientId)
-    .eq('tenant_id', tenantId)
     .single()
-
-  return patient
-}
-
-export async function saveVitalSigns(slug: string, patientId: string, formData: FormData) {
-  const supabase = await createClient()
-  const tenantId = await getTenantId(slug)
-  if (!tenantId) return { error: 'No tienes una clínica activa' }
-
-  const vitalSigns = {
-    blood_pressure: formData.get('blood_pressure') as string,
-    heart_rate: formData.get('heart_rate') as string,
-    temperature: formData.get('temperature') as string,
-    respiratory_rate: formData.get('respiratory_rate') as string,
-    oxygen_saturation: formData.get('oxygen_saturation') as string,
-    weight: formData.get('weight') as string,
-    height: formData.get('height') as string,
-    notes: formData.get('notes') as string,
-    recorded_at: new Date().toISOString(),
-  }
-
-  // Store in dental_records if there's one for this patient, or create a new one
-  const { data: existing } = await supabase
-    .from('dental_records')
-    .select('id, vital_signs')
-    .eq('patient_id', patientId)
-    .eq('tenant_id', tenantId)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single()
-
-  if (existing) {
-    const existingSigns = (existing.vital_signs as any[]) || []
-    await supabase
-      .from('dental_records')
-      .update({
-        vital_signs: [...existingSigns, vitalSigns],
-      })
-      .eq('id', existing.id)
-  }
-
-  redirect(`/${slug}/nursing/vital-signs`)
+  return data
 }
 
 export async function getVitalSigns(slug: string, patientId: string) {
   const supabase = await createClient()
-  const tenantId = await getTenantId(slug)
-  if (!tenantId) return []
-
-  const { data: records } = await supabase
-    .from('dental_records')
-    .select('vital_signs, created_at')
-    .eq('patient_id', patientId)
-    .eq('tenant_id', tenantId)
-    .order('created_at', { ascending: false })
-    .limit(5)
-
-  if (!records) return []
-
-  const allSigns: any[] = []
-  for (const r of records) {
-    const signs = r.vital_signs as any[]
-    if (signs) {
-      for (const s of signs) {
-        allSigns.push({ ...s, record_date: r.created_at })
-      }
-    }
-  }
-
-  return allSigns
-}
-
-export async function saveStomatognathicExam(slug: string, patientId: string, formData: FormData) {
-  const supabase = await createClient()
-  const tenantId = await getTenantId(slug)
-  if (!tenantId) return { error: 'No tienes una clínica activa' }
-
-  const exam = {
-    tmj: formData.get('tmj') as string,
-    lymph_nodes: formData.get('lymph_nodes') as string,
-    oral_mucosa: formData.get('oral_mucosa') as string,
-    tongue: formData.get('tongue') as string,
-    palate: formData.get('palate') as string,
-    floor_of_mouth: formData.get('floor_of_mouth') as string,
-    lips: formData.get('lips') as string,
-    salivary_glands: formData.get('salivary_glands') as string,
-    observations: formData.get('observations') as string,
-    recorded_at: new Date().toISOString(),
-  }
-
-  const { data: existing } = await supabase
+  const { data: record } = await supabase
     .from('dental_records')
     .select('id')
     .eq('patient_id', patientId)
-    .eq('tenant_id', tenantId)
-    .order('created_at', { ascending: false })
-    .limit(1)
     .single()
 
-  if (existing) {
-    await supabase
-      .from('dental_records')
-      .update({ stomatognathic_exam: exam as any })
-      .eq('id', existing.id)
-  }
+  if (!record) return []
 
-  redirect(`/${slug}/nursing/vital-signs`)
+  const { data } = await supabase
+    .from('vital_signs')
+    .select('*')
+    .eq('dental_record_id', record.id)
+    .order('created_at', { ascending: false })
+  return data || []
+}
+
+export async function saveVitalSigns(
+  slug: string,
+  patientId: string,
+  data: VitalSignsData
+) {
+  const supabase = await createClient()
+
+  const { data: record } = await supabase
+    .from('dental_records')
+    .select('id')
+    .eq('patient_id', patientId)
+    .single()
+
+  if (!record) return { error: 'No se encontró historia clínica' }
+
+  const { error } = await supabase
+    .from('vital_signs')
+    .insert({
+      dental_record_id: record.id,
+      ...data
+    })
+
+  if (error) return { error: error.message }
+  
+  revalidatePath(`/${slug}/nursing/vital-signs/${patientId}`)
+  return { success: true }
 }
 
 export async function getStomatognathicExam(slug: string, patientId: string) {
   const supabase = await createClient()
-  const tenantId = await getTenantId(slug)
-  if (!tenantId) return null
+  const { data: record } = await supabase
+    .from('dental_records')
+    .select('id')
+    .eq('patient_id', patientId)
+    .single()
+
+  if (!record) return null
+
+  const { data } = await supabase
+    .from('stomatognathic_exam')
+    .select('*')
+    .eq('dental_record_id', record.id)
+    .maybeSingle()
+  return data
+}
+
+export async function saveStomatognathicExam(
+  slug: string,
+  patientId: string,
+  data: StomatognathicExamData
+) {
+  const supabase = await createClient()
 
   const { data: record } = await supabase
     .from('dental_records')
-    .select('stomatognathic_exam')
+    .select('id')
     .eq('patient_id', patientId)
-    .eq('tenant_id', tenantId)
-    .order('created_at', { ascending: false })
-    .limit(1)
     .single()
 
-  return record?.stomatognathic_exam || null
-}
+  if (!record) return { error: 'No se encontró historia clínica' }
 
-export async function saveNursingNote(slug: string, patientId: string, formData: FormData) {
-  const supabase = await createClient()
-  const tenantId = await getTenantId(slug)
-  if (!tenantId) return { error: 'No tienes una clínica activa' }
-
-  const { data: { user } } = await supabase.auth.getUser()
-
-  const { error } = await supabase.from('nursing_notes').insert({
-    tenant_id: tenantId,
-    patient_id: patientId,
-    content: formData.get('content') as string,
-    created_by: user?.id,
-  })
+  const { error } = await supabase
+    .from('stomatognathic_exam')
+    .upsert({
+      dental_record_id: record.id,
+      ...data,
+      updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'dental_record_id'
+    })
 
   if (error) return { error: error.message }
-
-  redirect(`/${slug}/nursing/notes/${patientId}`)
+  
+  revalidatePath(`/${slug}/nursing/stomatognathic-exam/${patientId}`)
+  return { success: true }
 }
 
 export async function getNursingNotes(slug: string, patientId: string) {
   const supabase = await createClient()
-  const tenantId = await getTenantId(slug)
-  if (!tenantId) return []
+  const { data: record } = await supabase
+    .from('dental_records')
+    .select('id')
+    .eq('patient_id', patientId)
+    .single()
 
-  const { data: notes } = await supabase
+  if (!record) return []
+
+  const { data } = await supabase
     .from('nursing_notes')
     .select('*')
-    .eq('patient_id', patientId)
-    .eq('tenant_id', tenantId)
+    .eq('dental_record_id', record.id)
     .order('created_at', { ascending: false })
+  return data || []
+}
 
-  return notes ?? []
+export async function saveNursingNote(
+  slug: string,
+  patientId: string,
+  note: string
+) {
+  const supabase = await createClient()
+
+  const { data: record } = await supabase
+    .from('dental_records')
+    .select('id')
+    .eq('patient_id', patientId)
+    .single()
+
+  if (!record) return { error: 'No se encontró historia clínica' }
+
+  const { error } = await supabase
+    .from('nursing_notes')
+    .insert({
+      dental_record_id: record.id,
+      note
+    })
+
+  if (error) return { error: error.message }
+  
+  revalidatePath(`/${slug}/nursing/notes/${patientId}`)
+  return { success: true }
 }

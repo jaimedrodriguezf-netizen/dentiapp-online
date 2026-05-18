@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, Save, Loader2, FileText } from 'lucide-react'
+import { Plus, Trash2, Save, Loader2, FileText, Zap, Sparkles } from 'lucide-react'
 import VademecumSearch from './VademecumSearch'
 
 interface PrescriptionItem {
@@ -15,10 +15,42 @@ interface PrescriptionItem {
   quantity: number | null
 }
 
+interface PrescriptionTemplate {
+  name: string
+  icon: string
+  items: PrescriptionItem[]
+}
+
 interface Props {
   slug: string
   recordId: string
 }
+
+const templates: PrescriptionTemplate[] = [
+  {
+    name: 'Post-Extracción',
+    icon: '🦷',
+    items: [
+      { medication_name: 'Ibuprofeno', dosage: '600mg', frequency: 'c/8h', duration: '3 días', instructions: 'Tomar después de las comidas', quantity: 10 },
+      { medication_name: 'Amoxicilina', dosage: '500mg', frequency: 'c/8h', duration: '7 días', instructions: 'Completar el ciclo de antibiótico', quantity: 21 },
+    ]
+  },
+  {
+    name: 'Infección Leve',
+    icon: '🦠',
+    items: [
+      { medication_name: 'Amoxicilina + Ácido Clavulánico', dosage: '875/125mg', frequency: 'c/12h', duration: '7 días', instructions: 'Tomar con abundante agua', quantity: 14 },
+      { medication_name: 'Paracetamol', dosage: '1g', frequency: 'c/8h', duration: '3 días', instructions: 'En caso de dolor o fiebre', quantity: 10 },
+    ]
+  },
+  {
+    name: 'Gingivitis/Periodontitis',
+    icon: '👄',
+    items: [
+      { medication_name: 'Clorhexidina colutorio 0.12%', dosage: '15ml', frequency: 'c/12h', duration: '15 días', instructions: 'Enjuagar durante 30 segundos, no ingerir', quantity: 1 },
+    ]
+  }
+]
 
 export default function PrescriptionManager({ slug, recordId }: Props) {
   const [items, setItems] = useState<PrescriptionItem[]>([])
@@ -54,7 +86,7 @@ export default function PrescriptionManager({ slug, recordId }: Props) {
     }
   }
 
-  function handleChange(index: number, field: keyof PrescriptionItem, value: any) {
+  function handleChange(index: number, field: keyof PrescriptionItem, value: string | number | null) {
     setItems((prev) => {
       const updated = [...prev]
       updated[index] = { ...updated[index], [field]: value }
@@ -64,6 +96,18 @@ export default function PrescriptionManager({ slug, recordId }: Props) {
 
   function handleAdd() {
     setItems((prev) => [...prev, createEmpty()])
+  }
+
+  function applyTemplate(template: PrescriptionTemplate) {
+    // Si la lista está vacía o solo tiene un item vacío, reemplazamos todo
+    const isListEmpty = items.length === 1 && !items[0].medication_name
+    
+    if (isListEmpty) {
+      setItems([...template.items])
+    } else {
+      // Si ya hay items, agregamos los de la plantilla al final
+      setItems(prev => [...prev, ...template.items])
+    }
   }
 
   function handleRemove(index: number) {
@@ -120,120 +164,159 @@ export default function PrescriptionManager({ slug, recordId }: Props) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-          <FileText className="w-5 h-5 text-gray-400" />
-          Receta médica
+        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+          <FileText className="w-5 h-5 text-blue-600" />
+          Receta Médica
         </h3>
       </div>
 
-      {items.map((item, index) => (
-        <div key={index} className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
-          <div className="flex items-start justify-between">
-            <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-              Medicamento #{index + 1}
-            </span>
-            {items.length > 1 && (
-              <button
-                type="button"
-                onClick={() => handleRemove(index)}
-                className="text-gray-400 hover:text-red-500 transition-colors"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-
-          <VademecumSearch
-            defaultValue={item.medication_name}
-            onSelect={(id, name) => handleMedicationSelect(index, id, name)}
-          />
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Dosis</label>
-              <input
-                type="text"
-                value={item.dosage}
-                onChange={(e) => handleChange(index, 'dosage', e.target.value)}
-                placeholder="500mg"
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Frecuencia</label>
-              <input
-                type="text"
-                value={item.frequency}
-                onChange={(e) => handleChange(index, 'frequency', e.target.value)}
-                placeholder="c/8h"
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Duración</label>
-              <input
-                type="text"
-                value={item.duration}
-                onChange={(e) => handleChange(index, 'duration', e.target.value)}
-                placeholder="7 días"
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Cantidad</label>
-              <input
-                type="number"
-                value={item.quantity ?? ''}
-                onChange={(e) => handleChange(index, 'quantity', e.target.value ? parseInt(e.target.value) : null)}
-                placeholder="14"
-                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Indicaciones</label>
-            <input
-              type="text"
-              value={item.instructions}
-              onChange={(e) => handleChange(index, 'instructions', e.target.value)}
-              placeholder="Tomar después de las comidas..."
-              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
+      {/* ⚡ SECCIÓN DE PLANTILLAS RÁPIDAS */}
+      <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Zap className="w-4 h-4 text-blue-600 fill-blue-600" />
+          <span className="text-xs font-black text-blue-900 uppercase tracking-widest">Recetas Rápidas</span>
         </div>
-      ))}
+        <div className="flex flex-wrap gap-2">
+          {templates.map((template) => (
+            <button
+              key={template.name}
+              type="button"
+              onClick={() => applyTemplate(template)}
+              className="px-3 py-2 bg-white border border-blue-200 rounded-xl text-xs font-bold text-blue-700 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm active:scale-95 flex items-center gap-2"
+            >
+              <span>{template.icon}</span>
+              {template.name}
+            </button>
+          ))}
+        </div>
+      </div>
 
-      <button
-        type="button"
-        onClick={handleAdd}
-        className="w-full rounded-lg border-2 border-dashed border-gray-300 py-3 text-sm font-medium text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors flex items-center justify-center gap-2"
-      >
-        <Plus className="w-4 h-4" />
-        Agregar medicamento
-      </button>
+      <div className="space-y-4">
+        {items.map((item, index) => (
+          <div key={index} className="group relative rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:border-blue-300 transition-all">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-xs font-black text-gray-500">
+                  {index + 1}
+                </div>
+                <span className="text-xs font-black text-gray-400 uppercase tracking-widest">
+                  Medicamento
+                </span>
+              </div>
+              {items.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => handleRemove(index)}
+                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
 
-      {error && (
-        <p className="text-sm text-red-500">{error}</p>
-      )}
+            <div className="space-y-4">
+              <VademecumSearch
+                defaultValue={item.medication_name}
+                onSelect={(id, name) => handleMedicationSelect(index, id, name)}
+              />
 
-      <div className="flex items-center gap-3 pt-2">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Dosis</label>
+                  <input
+                    type="text"
+                    value={item.dosage}
+                    onChange={(e) => handleChange(index, 'dosage', e.target.value)}
+                    placeholder="Ej: 500mg"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50/30 px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Frecuencia</label>
+                  <input
+                    type="text"
+                    value={item.frequency}
+                    onChange={(e) => handleChange(index, 'frequency', e.target.value)}
+                    placeholder="Ej: c/8h"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50/30 px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Duración</label>
+                  <input
+                    type="text"
+                    value={item.duration}
+                    onChange={(e) => handleChange(index, 'duration', e.target.value)}
+                    placeholder="Ej: 7 días"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50/30 px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Cantidad</label>
+                  <input
+                    type="number"
+                    value={item.quantity ?? ''}
+                    onChange={(e) => handleChange(index, 'quantity', e.target.value ? parseInt(e.target.value) : null)}
+                    placeholder="Ej: 14"
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50/30 px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Indicaciones Adicionales</label>
+                <input
+                  type="text"
+                  value={item.instructions}
+                  onChange={(e) => handleChange(index, 'instructions', e.target.value)}
+                  placeholder="Ej: Tomar después del almuerzo..."
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50/30 px-4 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-col sm:flex-row items-center gap-4 pt-4">
+        <button
+          type="button"
+          onClick={handleAdd}
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-200 px-6 py-3 text-sm font-bold text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-all active:scale-95"
+        >
+          <Plus className="w-4 h-4" />
+          Agregar Medicamento
+        </button>
+
+        <div className="flex-1" />
+
         <button
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors disabled:opacity-50"
+          className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl px-10 py-3 text-sm font-black text-white transition-all shadow-lg active:scale-95 disabled:opacity-50 ${
+            success ? 'bg-success shadow-success/20' : 'bg-blue-600 shadow-blue-500/20 hover:bg-blue-700'
+          }`}
         >
           {saving ? (
             <Loader2 className="w-4 h-4 animate-spin" />
+          ) : success ? (
+            <Sparkles className="w-4 h-4" />
           ) : (
             <Save className="w-4 h-4" />
           )}
-          {success ? 'Receta guardada ✓' : 'Guardar receta'}
+          {success ? '¡Receta Guardada!' : 'GUARDAR RECETA'}
         </button>
       </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-100 rounded-xl p-3 flex items-center gap-2 text-red-600 text-xs font-bold">
+          <Trash2 className="w-4 h-4" />
+          {error}
+        </div>
+      )}
     </div>
   )
 }

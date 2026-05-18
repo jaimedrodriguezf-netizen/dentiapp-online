@@ -159,7 +159,7 @@ export default async function Form033DetailPage({ params }: Props) {
             <OdontogramSVG teeth={teeth} />
           ) : (
             <p className="text-sm text-gray-400 text-center py-8">
-              No se han registrado dientes aún. Hacé click en "Editar odontograma" para empezar.
+              No se han registrado dientes aún. Hacé click en &quot;Editar odontograma&quot; para empezar.
             </p>
           )}
         </div>

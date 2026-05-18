@@ -1,6 +1,25 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+/**
+ * PROXY DE SEGURIDAD PARA DENTIAPP ONLINE
+ * --------------------------------------
+ * Este archivo centraliza TODA la seguridad de rutas del proyecto.
+ */
+
+interface TenantProxyInfo {
+  id: string
+  name: string
+  slug: string
+  plan: 'standard' | 'business'
+}
+
+interface MembershipProxyInfo {
+  role: 'admin' | 'supervisor' | 'doctor' | 'nurse' | 'receptionist'
+  tenant_id: string
+  tenants: TenantProxyInfo
+}
+
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -29,29 +48,94 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  // Refresh session if expired
-  const { data: { user } } = await supabase.auth.getUser()
+  // 1. Verificar Sesión
+  const { data: userData } = await supabase.auth.getUser()
+  const user = userData?.user
+  
+  const url = request.nextUrl.clone()
+  const path = url.pathname
+  const pathSegments = path.split('/').filter(Boolean)
 
-  // If user is logged in and trying to access auth pages, redirect to dashboard
-  if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/register')) {
-    const { data: membership } = await supabase
+  if (path === '/' || path.startsWith('/api/') || path.startsWith('/_next/')) {
+    return supabaseResponse
+  }
+
+  // 2. Redirecciones Inteligentes para Auth
+  if (user && (path === '/login' || path === '/register')) {
+    const { data: membershipRaw } = await supabase
       .from('tenant_members')
       .select('tenants(slug)')
       .eq('user_id', user.id)
-      .single()
-
-    if (membership) {
-      const tenantSlug = (membership.tenants as unknown as { slug: string }).slug
-      const dashboardUrl = new URL(`/${tenantSlug}/dashboard`, request.url)
-      return NextResponse.redirect(dashboardUrl)
+      .limit(1)
+      .maybeSingle()
+    
+    if (membershipRaw && membershipRaw.tenants) {
+      const tenants = membershipRaw.tenants as unknown as { slug: string }
+      return NextResponse.redirect(new URL(`/${tenants.slug}/dashboard`, request.url))
     }
   }
 
-  // If user is NOT logged in and tries to access tenant dashboard, redirect to login
-  if (!user && request.nextUrl.pathname.match(/^\/[^/]+\/dashboard/)) {
-    const slug = request.nextUrl.pathname.split('/')[1]
-    const loginUrl = new URL(`/${slug}/login`, request.url)
-    return NextResponse.redirect(loginUrl)
+  // 3. PROTECCIÓN DE RUTAS DEL TENANT (/[slug]/...)
+  if (pathSegments.length >= 2) {
+    const slug = pathSegments[0]
+    const tenantModule = pathSegments[1]
+    const subPage = pathSegments[2]
+
+    const tenantModules = ['dashboard', 'admission', 'nursing', 'odontology', 'settings']
+    
+    if (tenantModules.includes(tenantModule) || path.includes('/settings/')) {
+      if (!user) {
+        return NextResponse.redirect(new URL(`/${slug}/login`, request.url))
+      }
+
+      // 4. Verificar Membresía, Rol y Plan
+      const { data: membershipRaw } = await supabase
+        .from('tenant_members')
+        .select('role, tenant_id, tenants(id, name, slug, plan)')
+        .eq('user_id', user.id)
+        .eq('tenants.slug', slug)
+        .maybeSingle()
+      
+      if (!membershipRaw) {
+        return NextResponse.redirect(new URL(`/login`, request.url))
+      }
+
+      // Mapping seguro sin any
+      const membership: MembershipProxyInfo = {
+        role: membershipRaw.role as MembershipProxyInfo['role'],
+        tenant_id: membershipRaw.tenant_id,
+        tenants: membershipRaw.tenants as unknown as TenantProxyInfo
+      }
+
+      const role = membership.role
+      const plan = membership.tenants.plan
+
+      if (role === 'admin') return supabaseResponse
+
+      // A. RESTRICCIÓN DE ENFERMERÍA (Exclusivo Plan Business)
+      if (tenantModule === 'nursing' && plan !== 'business') {
+        return NextResponse.redirect(new URL(`/${slug}/dashboard`, request.url))
+      }
+
+      // B. RESTRICCIÓN DE CONFIGURACIÓN SENSIBLE (Permisos y Equipo)
+      if (tenantModule === 'settings' && (subPage === 'permissions' || subPage === 'team')) {
+        if (role !== 'supervisor') {
+          return NextResponse.redirect(new URL(`/${slug}/dashboard`, request.url))
+        }
+
+        if (subPage === 'team' && plan === 'standard') {
+          return NextResponse.redirect(new URL(`/${slug}/dashboard`, request.url))
+        }
+      }
+
+      // C. RESTRICCIÓN DE PLAN STANDARD (Uso personal)
+      if (plan === 'standard' && tenantModule === 'admission') {
+         // El Doctor TAMBIÉN necesita entrar a admisión para ver sus pacientes y turnos
+         if (role !== 'supervisor' && role !== 'doctor') {
+            return NextResponse.redirect(new URL(`/${slug}/dashboard`, request.url))
+         }
+      }
+    }
   }
 
   return supabaseResponse
