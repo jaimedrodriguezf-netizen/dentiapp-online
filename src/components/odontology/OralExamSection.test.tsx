@@ -31,12 +31,30 @@ describe('MalocclusionFields', () => {
 })
 
 describe('StomatognathicFields', () => {
-  it('renders all structure buttons', () => {
+  it('renders all 13 region labels', () => {
     render(<StomatognathicFields />)
-    expect(screen.getByText('Labios')).toBeInTheDocument()
-    expect(screen.getByText('ATM')).toBeInTheDocument()
-    expect(screen.getByText('Lengua')).toBeInTheDocument()
-    expect(screen.getByText('Periodontal')).toBeInTheDocument()
+    expect(screen.getByText('1. LABIOS')).toBeInTheDocument()
+    expect(screen.getByText('11. A.T.M.')).toBeInTheDocument()
+    expect(screen.getByText('5. LENGUA')).toBeInTheDocument()
+    expect(screen.getByText('13. OTROS')).toBeInTheDocument()
+  })
+
+  it('renders text inputs for each region', () => {
+    render(<StomatognathicFields />)
+    const inputs = screen.getAllByPlaceholderText("Describir patología o 'S.P.A.'")
+    expect(inputs).toHaveLength(13)
+  })
+
+  it('populates from defaultValue.regions', () => {
+    render(
+      <StomatognathicFields
+        defaultValue={{
+          regions: [{ id: 'labios', finding: 'Lesión visible' }],
+        }}
+      />,
+    )
+    const labiosInput = screen.getAllByPlaceholderText("Describir patología o 'S.P.A.'")[0]
+    expect((labiosInput as HTMLInputElement).value).toBe('Lesión visible')
   })
 })
 

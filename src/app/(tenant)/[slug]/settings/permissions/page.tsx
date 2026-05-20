@@ -2,11 +2,17 @@
 
 import Link from 'next/link'
 import { Fragment, useState, useEffect, use } from 'react'
-import { ArrowLeft, Check, X, Loader2 } from 'lucide-react'
+import { ArrowLeft, Check, X, Loader2, Shield, Info, MoveHorizontal } from 'lucide-react'
 import { getRolePermissions, togglePermission } from '../actions'
 
 interface Props {
   params: Promise<{ slug: string }>
+}
+
+interface Permission {
+  role: string
+  permission_key: string
+  is_allowed: boolean
 }
 
 const roles = [
@@ -68,14 +74,14 @@ const sections = [
 
 export default function PermissionsSettingsPage({ params }: Props) {
   const { slug } = use(params)
-  const [permissions, setPermissions] = useState<any[]>([])
+  const [permissions, setPermissions] = useState<Permission[]>([])
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
       const data = await getRolePermissions(slug)
-      setPermissions(data)
+      setPermissions(data as Permission[])
       setLoading(false)
     }
     load()
@@ -113,73 +119,84 @@ export default function PermissionsSettingsPage({ params }: Props) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <p className="text-sm text-gray-500 font-medium">Cargando matriz de permisos...</p>
+        <p className="text-sm text-gray-500 font-black uppercase tracking-widest">Cargando matriz...</p>
       </div>
     )
   }
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-12">
-      <div className="flex items-center gap-4">
-        <Link href={`/${slug}/settings/profile`} className="btn btn-ghost btn-sm btn-circle">
-          <ArrowLeft className="w-4 h-4" />
+      <div className="flex items-center gap-4 px-4 md:px-0">
+        <Link href={`/${slug}/settings/profile`} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+          <ArrowLeft className="w-5 h-5 text-gray-500" />
         </Link>
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Roles y Permisos</h2>
-          <p className="text-gray-500 mt-1 text-sm">Matriz de permisos dinámica por rol en la clínica</p>
+          <h2 className="text-3xl font-black text-gray-900 tracking-tight">Permisos</h2>
+          <p className="text-gray-500 font-medium mt-1">Controlá qué puede hacer cada rol</p>
         </div>
       </div>
 
-      <div className="card bg-base-100 border border-base-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+      {/* Mobile Scroll Hint */}
+      <div className="bg-blue-50/50 p-2 flex items-center justify-center gap-2 lg:hidden border-b border-blue-100 rounded-2xl mx-4 md:mx-0">
+        <MoveHorizontal className="w-4 h-4 text-blue-400" />
+        <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest text-center">
+          Deslizá horizontalmente para ver todos los roles
+        </span>
+      </div>
+
+      <div className="card bg-white border border-gray-100 shadow-sm overflow-hidden mx-4 md:mx-0 rounded-[32px]">
+        <div className="overflow-x-auto scrollbar-hide">
           <table className="table table-md table-pin-rows">
             <thead>
-              <tr className="border-b border-base-200">
-                <th className="bg-base-100 py-4 px-6 text-xs font-bold uppercase tracking-wider text-base-content/50">Módulo / Permiso</th>
+              <tr className="border-b border-gray-100 bg-gray-50/50">
+                <th className="bg-transparent py-6 px-6 text-[10px] font-black uppercase tracking-widest text-gray-400">Permiso</th>
                 {roles.map((role) => (
-                  <th key={role.key} className="bg-base-100 text-center py-4 px-2">
-                    <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold uppercase border ${role.color}`}>
+                  <th key={role.key} className="bg-transparent text-center py-6 px-4">
+                    <span className={`inline-block px-3 py-1 rounded-xl text-[10px] font-black uppercase border-2 shadow-sm ${role.color}`}>
                       {role.label}
                     </span>
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-50">
               {sections.map((section) => (
                 <Fragment key={section.title}>
-                  <tr className="bg-base-200/50">
+                  <tr className="bg-blue-50/30">
                     <td colSpan={roles.length + 1} className="py-2 px-6">
-                      <span className="text-[10px] font-black text-base-content/40 uppercase tracking-widest">{section.title}</span>
+                      <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">{section.title}</span>
                     </td>
                   </tr>
                   {section.permissions.map((perm) => (
-                    <tr key={perm.key} className="border-b border-base-200 hover:bg-base-200/30 transition-colors group">
-                      <td className="py-4 px-6 text-sm font-medium text-base-content/80 group-hover:text-base-content">{perm.label}</td>
+                    <tr key={perm.key} className="hover:bg-gray-50 transition-colors group">
+                      <td className="py-5 px-6">
+                         <p className="text-sm font-bold text-gray-900 leading-tight">{perm.label}</p>
+                         <p className="text-[10px] text-gray-400 font-medium uppercase mt-0.5">{perm.key}</p>
+                      </td>
                       {roles.map((role) => {
                         const allowed = isAllowed(role.key, perm.key)
                         const key = `${role.key}-${perm.key}`
                         const isUpdating = updating === key
 
                         return (
-                          <td key={role.key} className="text-center py-4 px-2">
+                          <td key={role.key} className="text-center py-4 px-4">
                             <button
                               disabled={isUpdating}
                               onClick={() => handleToggle(role.key, perm.key, allowed)}
-                              className={`inline-flex items-center justify-center w-8 h-8 rounded-xl transition-all ${
+                              className={`inline-flex items-center justify-center w-10 h-10 rounded-2xl transition-all border-2 ${
                                 isUpdating 
-                                  ? 'bg-base-200 animate-pulse' 
+                                  ? 'bg-gray-50 animate-pulse border-gray-100' 
                                   : allowed 
-                                    ? 'bg-success/20 text-success hover:bg-success/30 shadow-sm' 
-                                    : 'bg-base-200 text-base-content/30 hover:bg-base-300'
+                                    ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-600 hover:text-white hover:border-green-600 shadow-sm' 
+                                    : 'bg-white text-gray-200 border-gray-100 hover:border-red-200 hover:text-red-400'
                               }`}
                             >
                               {isUpdating ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
                               ) : allowed ? (
-                                <Check className="w-5 h-5" />
+                                <Check className="w-5 h-5 stroke-[3]" />
                               ) : (
-                                <X className="w-5 h-5" />
+                                <X className="w-5 h-5 stroke-[3]" />
                               )}
                             </button>
                           </td>
@@ -194,14 +211,14 @@ export default function PermissionsSettingsPage({ params }: Props) {
         </div>
       </div>
       
-      <div className="alert alert-info shadow-sm rounded-2xl bg-blue-50 border-blue-100">
-        <div className="flex gap-3">
-          <div className="p-2 bg-blue-500 rounded-lg text-white h-fit">
-            <Check className="w-4 h-4" />
+      <div className="alert alert-info shadow-sm rounded-3xl bg-blue-50 border-2 border-blue-100 mx-4 md:mx-0 p-5">
+        <div className="flex gap-4">
+          <div className="p-2 bg-blue-600 rounded-xl text-white h-fit shadow-lg shadow-blue-200">
+            <Shield className="w-5 h-5" />
           </div>
           <div className="text-sm">
-            <p className="font-bold text-blue-900">Nota de seguridad</p>
-            <p className="text-blue-800">Los cambios se aplican instantáneamente. Algunos roles pueden requerir recargar la página para ver los cambios en el menú lateral.</p>
+            <p className="font-black text-blue-900 uppercase tracking-wide mb-1">Nota de seguridad</p>
+            <p className="text-blue-800 leading-relaxed font-medium">Los cambios se aplican instantáneamente. Es posible que el personal deba recargar la aplicación para ver los nuevos accesos.</p>
           </div>
         </div>
       </div>

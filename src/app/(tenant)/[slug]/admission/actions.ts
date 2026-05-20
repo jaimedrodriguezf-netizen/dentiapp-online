@@ -42,6 +42,8 @@ export async function createPatient(slug: string, formData: FormData) {
     phone: formData.get('phone') as string,
     email: formData.get('email') as string,
     address: formData.get('address') as string,
+    status: (formData.get('status') as string) || 'active',
+    observations: formData.get('observations') as string || null,
   })
 
   if (error) return { error: error.message }
@@ -80,6 +82,8 @@ export async function updatePatient(slug: string, patientId: string, formData: F
       phone: formData.get('phone') as string,
       email: formData.get('email') as string,
       address: formData.get('address') as string,
+      status: formData.get('status') as string || undefined,
+      observations: formData.get('observations') as string || undefined,
     })
     .eq('id', patientId)
     .eq('tenant_id', tenantId)

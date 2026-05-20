@@ -121,56 +121,81 @@ export function MalocclusionFields({ defaultClass, defaultOverjet, defaultOverbi
 /* ─── Stomatognathic Exam ─── */
 
 interface StomatognathicProps {
-  defaultValues?: string[]
+  defaultValue?: {
+    regions?: Array<{ id: string; finding: string }>
+    free_text?: string
+  }
 }
 
-const stomatognathicStructures = [
-  { id: 'labios', label: 'Labios' },
-  { id: 'mejillas', label: 'Mejillas' },
-  { id: 'atm', label: 'ATM' },
-  { id: 'musculos', label: 'Músculos masticatorios' },
-  { id: 'piso_boca', label: 'Piso de boca' },
-  { id: 'lengua', label: 'Lengua' },
-  { id: 'paladar_duro', label: 'Paladar duro' },
-  { id: 'paladar_blando', label: 'Paladar blando' },
-  { id: 'gingival', label: 'Encía' },
-  { id: 'periodontal', label: 'Periodontal' },
+const mspRegions = [
+  { id: 'labios', label: 'LABIOS' },
+  { id: 'mejillas', label: 'MEJILLAS' },
+  { id: 'maxilar_superior', label: 'MAXILAR SUPERIOR' },
+  { id: 'maxilar_inferior', label: 'MAXILAR INFERIOR' },
+  { id: 'lengua', label: 'LENGUA' },
+  { id: 'paladar', label: 'PALADAR' },
+  { id: 'piso_boca', label: 'PISO DE LA BOCA' },
+  { id: 'carrillos', label: 'CARRILLOS' },
+  { id: 'glandulas_salivales', label: 'GLÁNDULAS SALIVALES' },
+  { id: 'oro_faringe', label: 'ORO FARINGE' },
+  { id: 'atm', label: 'A.T.M.' },
+  { id: 'ganglios', label: 'GANGLIOS' },
+  { id: 'otros', label: 'OTROS' },
 ]
 
-export function StomatognathicFields({ defaultValues }: StomatognathicProps) {
-  const [selected, setSelected] = useState<string[]>(defaultValues || [])
-  const hiddenRef = useRef<HTMLInputElement>(null)
+export function StomatognathicFields({ defaultValue }: StomatognathicProps) {
+  const initRegions = mspRegions.map((r) => {
+    const found = defaultValue?.regions?.find((d) => d.id === r.id)
+    return { id: r.id, finding: found?.finding || '' }
+  })
 
-  function toggle(id: string) {
-    const next = selected.includes(id)
-      ? selected.filter((s) => s !== id)
-      : [...selected, id]
-    setSelected(next)
-    if (hiddenRef.current) {
-      hiddenRef.current.value = next.join(',')
-    }
+  const [regions, setRegions] = useState(initRegions)
+  const serialized = JSON.stringify({ regions: regions, free_text: '' })
+
+  function updateFinding(id: string, finding: string) {
+    const next = regions.map((r) => (r.id === id ? { ...r, finding } : r))
+    setRegions(next)
+  }
+
+  function markAllSPA() {
+    const next = regions.map((r) => ({ ...r, finding: 'S.P.A.' }))
+    setRegions(next)
   }
 
   return (
-    <div>
-      <input type="hidden" ref={hiddenRef} name="stomatognathic_exam" defaultValue={selected.join(',')} />
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-        {stomatognathicStructures.map((s) => (
-          <button
-            key={s.id}
-            type="button"
-            onClick={() => toggle(s.id)}
-            className={`px-3 py-2 rounded-lg text-xs font-medium border transition-colors ${
-              selected.includes(s.id)
-                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            {s.label}
-          </button>
+    <div className="space-y-4">
+      <input
+        type="hidden"
+        name="stomatognathic_exam"
+        value={serialized}
+        readOnly
+      />
+      <div className="flex justify-between items-center px-2">
+        <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Regiones MSP</p>
+        <button
+          type="button"
+          onClick={markAllSPA}
+          className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:text-blue-700 transition-colors bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100"
+        >
+          Marcar todo como S.P.A.
+        </button>
+      </div>
+      <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 space-y-2">
+        {mspRegions.map((r, i) => (
+          <div key={r.id} className="flex flex-col sm:flex-row sm:items-center gap-2 group">
+            <span className="text-[10px] font-black text-gray-500 w-[140px] uppercase tracking-tight shrink-0">
+              {i + 1}. {r.label}
+            </span>
+            <input
+              type="text"
+              value={regions.find((reg) => reg.id === r.id)?.finding || ''}
+              onChange={(e) => updateFinding(r.id, e.target.value)}
+              placeholder="Describir patología o 'S.P.A.'"
+              className="flex-1 rounded-xl border-2 border-gray-100 bg-white px-4 py-2.5 text-sm font-bold text-gray-900 placeholder:text-gray-300 focus:border-blue-500 focus:outline-none transition-all"
+            />
+          </div>
         ))}
       </div>
-      <p className="text-xs text-gray-400 mt-1.5">Seleccioná las estructuras afectadas</p>
     </div>
   )
 }

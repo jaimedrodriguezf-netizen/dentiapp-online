@@ -63,6 +63,22 @@ export async function createDentalRecord(slug: string, patientId: string, formDa
   const tenantId = await getTenantId(slug)
   if (!tenantId) return { error: 'No tienes una clínica activa' }
 
+  // Parse JSONB fields
+  const personalHistoryRaw = formData.get('personal_history') as string
+  const familyHistoryRaw = formData.get('family_history') as string
+  const complementaryExamsRaw = formData.get('complementary_exams') as string
+  const stomatognathicRaw = formData.get('stomatognathic_exam') as string
+
+  let personalHistory = null
+  let familyHistory = null
+  let complementaryExams = null
+  let stomatognathicExam = null
+
+  try { if (personalHistoryRaw) personalHistory = JSON.parse(personalHistoryRaw) } catch {}
+  try { if (familyHistoryRaw) familyHistory = JSON.parse(familyHistoryRaw) } catch {}
+  try { if (complementaryExamsRaw) complementaryExams = JSON.parse(complementaryExamsRaw) } catch {}
+  try { if (stomatognathicRaw) stomatognathicExam = JSON.parse(stomatognathicRaw) } catch {}
+
   const { data: record, error } = await supabase
     .from('dental_records')
     .insert({
@@ -70,19 +86,24 @@ export async function createDentalRecord(slug: string, patientId: string, formDa
       patient_id: patientId,
       consultation_reason: formData.get('consultation_reason') as string,
       current_problem: formData.get('current_problem') ? { text: formData.get('current_problem') } : null,
-      personal_family_history: formData.get('personal_family_history') as string,
-      diagnostic_plan: formData.get('diagnostic_plan') as string,
-      therapeutic_plan: formData.get('therapeutic_plan') as string,
-      educational_plan: formData.get('educational_plan') as string,
+      personal_family_history: formData.get('personal_family_history') as string || null,
+      diagnostic_plan: formData.get('diagnostic_plan') as string || null,
+      therapeutic_plan: formData.get('therapeutic_plan') as string || null,
+      educational_plan: formData.get('educational_plan') as string || null,
       diagnosis: buildDiagnosis(formData),
       treatment: formData.get('treatment') ? { text: formData.get('treatment') } : null,
       vital_signs: buildVitalSigns(formData),
       oral_hygiene: buildOralHygiene(formData),
-      stomatognathic_exam: (formData.get('stomatognathic_exam') as string) || null,
+      stomatognathic_exam: stomatognathicExam,
       fluorosis: (formData.get('fluorosis') as string) || null,
       malocclusion: buildMalocclusion(formData),
       cpod_index: buildIndex(formData, 'cpod'),
       ceod_index: buildIndex(formData, 'ceod'),
+      pregnant: parsePregnant(formData),
+      personal_history: personalHistory,
+      family_history: familyHistory,
+      periodontal_disease: (formData.get('periodontal_disease') as string) || null,
+      complementary_exams: complementaryExams,
       opening_date: new Date().toISOString().split('T')[0],
     })
     .select()
@@ -90,30 +111,99 @@ export async function createDentalRecord(slug: string, patientId: string, formDa
 
   if (error) return { error: error.message }
 
+  // Save odontogram teeth
+  const odontogramTeethRaw = formData.get('odontogram_teeth') as string
+  if (odontogramTeethRaw) {
+    try {
+      const teeth = JSON.parse(odontogramTeethRaw)
+      if (Array.isArray(teeth) && teeth.length > 0) {
+        await supabase.from('odontogram_teeth').upsert(
+          teeth.map((tooth: { tooth_number: number; status: string; surfaces?: Record<string, string> }) => ({
+            dental_record_id: record.id,
+            tenant_id: tenantId,
+            tooth_number: tooth.tooth_number,
+            status: tooth.status,
+            surfaces: tooth.surfaces || null,
+          })),
+          { onConflict: 'dental_record_id,tooth_number' }
+        )
+      }
+    } catch {}
+  }
+
+  // Save treatment sessions
+  const sessionsRaw = formData.get('treatment_sessions') as string
+  if (sessionsRaw) {
+    try {
+      const sessions = JSON.parse(sessionsRaw)
+      if (Array.isArray(sessions) && sessions.length > 0) {
+        await supabase.from('treatment_sessions').insert(
+          sessions.map((s: {
+            session_number: number
+            session_date?: string
+            diagnoses_complications?: string
+            procedures?: string
+            prescriptions?: string
+            signature?: string
+          }) => ({
+            dental_record_id: record.id,
+            session_number: s.session_number,
+            session_date: s.session_date || null,
+            diagnoses_complications: s.diagnoses_complications || null,
+            procedures: s.procedures || null,
+            prescriptions: s.prescriptions || null,
+            signature: s.signature || null,
+          }))
+        )
+      }
+    } catch {}
+  }
+
   redirect(`/${slug}/odontology/form-033/${record.id}`)
 }
 
 export async function updateDentalRecord(slug: string, recordId: string, formData: FormData) {
   const supabase = await createClient()
 
+  // Parse JSONB fields
+  const personalHistoryRaw = formData.get('personal_history') as string
+  const familyHistoryRaw = formData.get('family_history') as string
+  const complementaryExamsRaw = formData.get('complementary_exams') as string
+  const stomatognathicRaw = formData.get('stomatognathic_exam') as string
+
+  let personalHistory = null
+  let familyHistory = null
+  let complementaryExams = null
+  let stomatognathicExam = null
+
+  try { if (personalHistoryRaw) personalHistory = JSON.parse(personalHistoryRaw) } catch {}
+  try { if (familyHistoryRaw) familyHistory = JSON.parse(familyHistoryRaw) } catch {}
+  try { if (complementaryExamsRaw) complementaryExams = JSON.parse(complementaryExamsRaw) } catch {}
+  try { if (stomatognathicRaw) stomatognathicExam = JSON.parse(stomatognathicRaw) } catch {}
+
   const { error } = await supabase
     .from('dental_records')
     .update({
       consultation_reason: formData.get('consultation_reason') as string,
       current_problem: formData.get('current_problem') ? { text: formData.get('current_problem') } : null,
-      personal_family_history: formData.get('personal_family_history') as string,
-      diagnostic_plan: formData.get('diagnostic_plan') as string,
-      therapeutic_plan: formData.get('therapeutic_plan') as string,
-      educational_plan: formData.get('educational_plan') as string,
+      personal_family_history: formData.get('personal_family_history') as string || null,
+      diagnostic_plan: formData.get('diagnostic_plan') as string || null,
+      therapeutic_plan: formData.get('therapeutic_plan') as string || null,
+      educational_plan: formData.get('educational_plan') as string || null,
       diagnosis: buildDiagnosis(formData),
       treatment: formData.get('treatment') ? { text: formData.get('treatment') } : null,
       vital_signs: buildVitalSigns(formData),
       oral_hygiene: buildOralHygiene(formData),
-      stomatognathic_exam: (formData.get('stomatognathic_exam') as string) || null,
+      stomatognathic_exam: stomatognathicExam,
       fluorosis: (formData.get('fluorosis') as string) || null,
       malocclusion: buildMalocclusion(formData),
       cpod_index: buildIndex(formData, 'cpod'),
       ceod_index: buildIndex(formData, 'ceod'),
+      pregnant: parsePregnant(formData),
+      personal_history: personalHistory,
+      family_history: familyHistory,
+      periodontal_disease: (formData.get('periodontal_disease') as string) || null,
+      complementary_exams: complementaryExams,
     })
     .eq('id', recordId)
 
@@ -122,11 +212,20 @@ export async function updateDentalRecord(slug: string, recordId: string, formDat
   redirect(`/${slug}/odontology/form-033/${recordId}`)
 }
 
-/** Build structured diagnosis JSONB from CIE-10 fields + clinical notes */
+/** Parse pregnant field: 'true'/'false' → boolean/null */
+function parsePregnant(formData: FormData): boolean | null {
+  const val = formData.get('pregnant') as string
+  if (val === 'true') return true
+  if (val === 'false') return false
+  return null
+}
+
+/** Build structured diagnosis JSONB from CIE-10 fields + clinical notes + type */
 function buildDiagnosis(formData: FormData) {
   const code = formData.get('diagnosis_code') as string
   const description = formData.get('diagnosis_description') as string
   const notes = formData.get('diagnosis_notes') as string
+  const type = formData.get('diagnosis_type') as string
 
   if (!code && !notes) return null
 
@@ -134,6 +233,7 @@ function buildDiagnosis(formData: FormData) {
     ...(code && { code }),
     ...(description && { description }),
     ...(notes && { text: notes }),
+    ...(type && { type }),
   }
 }
 
@@ -206,6 +306,22 @@ function buildIndex(formData: FormData, prefix: 'cpod' | 'ceod') {
   return prefix === 'cpod'
     ? { caries, missing, filled, total }
     : { caries, extraction: missing, filled, total }
+}
+
+/* ───────── Treatment Sessions ───────── */
+
+export async function getTreatmentSessions(slug: string, recordId: string) {
+  const supabase = await createClient()
+  const tenantId = await getTenantId(slug)
+  if (!tenantId) return []
+
+  const { data } = await supabase
+    .from('treatment_sessions')
+    .select('*')
+    .eq('dental_record_id', recordId)
+    .order('session_number', { ascending: true })
+
+  return data ?? []
 }
 
 /* ───────── Prescriptions (recetas) ───────── */

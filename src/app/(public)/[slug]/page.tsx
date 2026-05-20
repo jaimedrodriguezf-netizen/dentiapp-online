@@ -34,5 +34,21 @@ export default async function TenantPublicPage({ params }: Props) {
     color: { dark: '#1e40af', light: '#ffffff' },
   })
 
-  return <TenantLandingClient tenant={tenant} clinicUrl={clinicUrl} qrSvg={qrSvg} />
+  // Build WhatsApp link
+  const whatsappNumber = tenant.whatsapp_number || tenant.phone
+  let whatsappLink: string | null = null
+  if (whatsappNumber) {
+    const clean = whatsappNumber.replace(/[\s\-\+\(\)]/g, '')
+    const message = encodeURIComponent(`¡Hola! Quisiera agendar un turno. Vi su página: ${clinicUrl}`)
+    whatsappLink = `https://wa.me/${clean}?text=${message}`
+  }
+
+  // Fetch operating hours
+  const { data: operatingHours } = await supabase
+    .from('operating_hours')
+    .select('*')
+    .eq('tenant_id', tenant.id)
+    .order('day_of_week', { ascending: true })
+
+  return <TenantLandingClient tenant={tenant} clinicUrl={clinicUrl} qrSvg={qrSvg} whatsappLink={whatsappLink} operatingHours={operatingHours || []} />
 }

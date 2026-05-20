@@ -1,80 +1,71 @@
 import { createClient } from '@/lib/supabase/server'
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 
-interface Props {
-  params: Promise<{ slug: string; recordId: string }>
+interface PrescriptionItem {
+  id?: string
+  medication_id?: string | null
+  medication_name: string
+  dosage: string
+  frequency: string
+  duration: string
+  instructions: string
+  quantity: number | null
 }
 
-export async function GET(_req: NextRequest, { params }: Props) {
-  const { slug, recordId } = await params
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ recordId: string }> }
+) {
+  const { recordId } = await params
   const supabase = await createClient()
 
-  // Get tenant_id
-  const { data: tenant } = await supabase
-    .from('tenants')
-    .select('id')
-    .eq('slug', slug)
-    .single()
-
-  if (!tenant) {
-    return NextResponse.json({ error: 'Clínica no encontrada' }, { status: 404 })
-  }
-
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('prescriptions')
     .select('*')
     .eq('dental_record_id', recordId)
-    .eq('tenant_id', tenant.id)
-    .order('created_at')
+    .order('created_at', { ascending: true })
 
-  return NextResponse.json(data ?? [])
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json(data)
 }
 
-export async function POST(req: NextRequest, { params }: Props) {
-  const { slug, recordId } = await params
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ recordId: string }> }
+) {
+  const { recordId } = await params
   const supabase = await createClient()
+  const { items } = await request.json() as { items: PrescriptionItem[] }
 
-  const { data: tenant } = await supabase
-    .from('tenants')
-    .select('id')
-    .eq('slug', slug)
-    .single()
-
-  if (!tenant) {
-    return NextResponse.json({ error: 'Clínica no encontrada' }, { status: 404 })
+  if (!items || !Array.isArray(items)) {
+    return NextResponse.json({ error: 'Invalid items' }, { status: 400 })
   }
 
-  const body = await req.json()
-  const items: any[] = body.items ?? []
-
-  // Delete existing and re-insert
-  await supabase
+  // Delete existing ones for this record (simple sync for now)
+  const { error: deleteError } = await supabase
     .from('prescriptions')
     .delete()
     .eq('dental_record_id', recordId)
-    .eq('tenant_id', tenant.id)
 
-  if (items.length === 0) {
-    return NextResponse.json({ success: true })
-  }
+  if (deleteError) return NextResponse.json({ error: deleteError.message }, { status: 500 })
 
-  const { error } = await supabase.from('prescriptions').insert(
-    items.map((item: any) => ({
-      dental_record_id: recordId,
-      tenant_id: tenant.id,
-      medication_id: item.medication_id || null,
-      medication_name: item.medication_name,
-      dosage: item.dosage,
-      frequency: item.frequency,
-      duration: item.duration,
-      instructions: item.instructions,
-      quantity: item.quantity,
-    }))
-  )
+  // Insert new ones
+  const { error: insertError } = await supabase
+    .from('prescriptions')
+    .insert(
+      items.map((item) => ({
+        dental_record_id: recordId,
+        medication_id: item.medication_id,
+        medication_name: item.medication_name,
+        dosage: item.dosage,
+        frequency: item.frequency,
+        duration: item.duration,
+        instructions: item.instructions,
+        quantity: item.quantity,
+      }))
+    )
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
+  if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 })
 
   return NextResponse.json({ success: true })
 }

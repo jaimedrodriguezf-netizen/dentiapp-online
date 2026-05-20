@@ -1,7 +1,7 @@
 import { getPatient } from '../../actions'
 import { getDentalRecords } from '@/app/(tenant)/[slug]/odontology/actions'
 import Link from 'next/link'
-import { ArrowLeft, Plus, FileText, CalendarDays, Phone, Mail, MapPin, Edit } from 'lucide-react'
+import { ArrowLeft, Plus, FileText, CalendarDays, Phone, Mail, MapPin, Edit, Activity, ClipboardList } from 'lucide-react'
 
 interface Props {
   params: Promise<{ slug: string; id: string }>
@@ -46,9 +46,12 @@ export default async function PatientDetailPage({ params }: Props) {
                 </span>
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {patient.first_name} {patient.last_name}
-                </h2>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {patient.first_name} {patient.last_name}
+                  </h2>
+                  <StatusBadge status={patient.status || 'active'} />
+                </div>
                 <p className="text-gray-500">{patient.cedula ? `C.I. ${patient.cedula}` : 'Sin cédula'}</p>
               </div>
             </div>
@@ -69,6 +72,16 @@ export default async function PatientDetailPage({ params }: Props) {
               </Link>
             </div>
           </div>
+
+          {patient.observations && (
+            <>
+              <div className="divider my-4" />
+              <div className="flex items-start gap-2 text-sm text-gray-600">
+                <ClipboardList className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                <p className="leading-relaxed">{patient.observations}</p>
+              </div>
+            </>
+          )}
 
           <div className="divider my-4" />
 
@@ -150,5 +163,21 @@ export default async function PatientDetailPage({ params }: Props) {
         )}
       </div>
     </div>
+  )
+}
+
+const statusConfig: Record<string, { label: string; color: string; bg: string }> = {
+  active: { label: 'Activo', color: 'text-green-700', bg: 'bg-green-50 border-green-200' },
+  in_treatment: { label: 'En Tratamiento', color: 'text-blue-700', bg: 'bg-blue-50 border-blue-200' },
+  inactive: { label: 'Inactivo', color: 'text-gray-500', bg: 'bg-gray-50 border-gray-200' },
+  discharged: { label: 'Alta', color: 'text-purple-700', bg: 'bg-purple-50 border-purple-200' },
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const config = statusConfig[status] || statusConfig.active
+  return (
+    <span className={`inline-block px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest border ${config.bg} ${config.color}`}>
+      {config.label}
+    </span>
   )
 }

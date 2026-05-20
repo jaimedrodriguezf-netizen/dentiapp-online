@@ -1,0 +1,26 @@
+schema: spec-driven
+context: |
+  Tech stack: Next.js 16, TypeScript 6, Tailwind 4, Supabase
+  Architecture: App Router, Server Actions, Modular Wizard
+  Testing: Vitest, RTL
+  Style: ESLint, Prettier
+strict_tdd: false
+testing:
+  runner: vitest
+  unit: true
+  integration: true
+  e2e: false
+  coverage: true
+  lint: eslint
+  type_check: tsc
+rules:
+  proposal:
+    - Focus on UX simplification for Form 033
+    - Ensure MSP Ecuador regulatory compliance
+  specs:
+    - Use Given/When/Then for user flows
+  design:
+    - Component-based architecture for the wizard
+    - State management for complex form data
+  tasks:
+    - Atomic steps for each form section

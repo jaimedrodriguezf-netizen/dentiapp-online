@@ -1,8 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
-import DashboardSidebar from '@/components/dashboard/DashboardSidebar'
-import DashboardHeader from '@/components/dashboard/DashboardHeader'
-import GlobalSearch from '@/components/ui/GlobalSearch'
+import TenantLayoutClient from '@/components/layout/TenantLayoutClient'
 
 interface Props {
   children: React.ReactNode
@@ -61,7 +59,6 @@ export default async function TenantLayout({ children, params }: Props) {
     notFound()
   }
 
-  // Type-safe mapping without any
   const raw = membershipRaw as unknown as SupabaseMembershipResponse
   const tenantsRaw = Array.isArray(raw.tenants) ? raw.tenants[0] : raw.tenants
 
@@ -93,20 +90,12 @@ export default async function TenantLayout({ children, params }: Props) {
   }
 
   return (
-    <div className="flex h-screen bg-base-200">
-      <GlobalSearch />
-      <DashboardSidebar 
-        role={membership.role} 
-        tenant={membership.tenants} 
-        permissions={permissionsMap}
-        plan={membership.tenants.plan}
-      />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <DashboardHeader user={user} tenant={membership.tenants} />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          {children}
-        </main>
-      </div>
-    </div>
+    <TenantLayoutClient 
+      user={user} 
+      membership={membership} 
+      permissionsMap={permissionsMap}
+    >
+      {children}
+    </TenantLayoutClient>
   )
 }

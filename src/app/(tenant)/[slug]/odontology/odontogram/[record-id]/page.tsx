@@ -1,36 +1,48 @@
-import { getDentalRecord, getOdontogramTeeth } from '../../actions'
+import { getOdontogramTeeth, getDentalRecord } from '../../actions'
 import OdontogramPage from '@/components/odontology/OdontogramPage'
-import Link from 'next/link'
+import { notFound } from 'next/navigation'
 
 interface Props {
   params: Promise<{ slug: string; 'record-id': string }>
 }
 
-export default async function OdontogramRoutePage({ params }: Props) {
+interface ToothData {
+  tooth_number: number
+  status: string
+  surfaces?: Record<string, string>
+}
+
+interface DentalRecord {
+  id: string
+  patient_id: string
+  patients: {
+    first_name: string
+    last_name: string
+  } | null
+}
+
+export default async function OdontogramEditPage({ params }: Props) {
   const { slug, 'record-id': recordId } = await params
+  const [initialTeethRaw, recordRaw] = await Promise.all([
+    getOdontogramTeeth(slug, recordId),
+    getDentalRecord(slug, recordId),
+  ])
 
-  const record = await getDentalRecord(slug, recordId)
-  const teeth = await getOdontogramTeeth(slug, recordId)
-
-  if (!record) {
-    return (
-      <div className="text-center py-16">
-        <h2 className="text-2xl font-bold text-gray-900">Historia clínica no encontrada</h2>
-        <Link href={`/${slug}/admission/patients`} className="text-blue-600 hover:underline mt-2 inline-block">
-          Volver a pacientes
-        </Link>
-      </div>
-    )
+  if (!recordRaw) {
+    notFound()
   }
 
-  const patient = record.patients as any
-  const patientName = patient ? `${patient.first_name} ${patient.last_name}` : 'Paciente'
+  const record = recordRaw as unknown as DentalRecord
+  const initialTeeth = (initialTeethRaw as unknown as ToothData[]) || []
+  const patientName = record.patients 
+    ? `${record.patients.first_name} ${record.patients.last_name}`
+    : 'Paciente'
 
   return (
     <OdontogramPage
-      recordId={recordId}
       slug={slug}
-      initialTeeth={teeth}
+      recordId={recordId}
+      initialTeeth={initialTeeth}
       recordPatientName={patientName}
     />
   )

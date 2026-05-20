@@ -2,10 +2,20 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { bookAppointment, getBusySlots } from './actions'
-import { CalendarDays, CheckCircle, Loader2, Clock, X } from 'lucide-react'
+import { CalendarDays, CheckCircle, Loader2, Clock, X, User, Phone, Mail, ClipboardList, Sparkles } from 'lucide-react'
 
 interface BookingFormProps {
   slug: string
+}
+
+interface SlotResponse {
+  busy: string[]
+}
+
+interface BookingSuccessData {
+  patient_name?: string
+  date?: string
+  time?: string
 }
 
 const MORNING_SLOTS = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30']
@@ -14,7 +24,7 @@ const AFTERNOON_SLOTS = ['14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '
 export default function BookingForm({ slug }: BookingFormProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<Record<string, unknown> | null>(null)
+  const [success, setSuccess] = useState<BookingSuccessData | null>(null)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
   const [busySlots, setBusySlots] = useState<string[]>([])
   const [fetchingSlots, setFetchingSlots] = useState(false)
@@ -26,16 +36,23 @@ export default function BookingForm({ slug }: BookingFormProps) {
     async (date: string) => {
       setFetchingSlots(true)
       setSelectedTime(null)
-      const result = await getBusySlots(slug, date)
-      setBusySlots(result.busy)
-      setFetchingSlots(false)
+      try {
+        const result = await getBusySlots(slug, date) as SlotResponse
+        setBusySlots(result.busy)
+      } finally {
+        setFetchingSlots(false)
+      }
     },
     [slug]
   )
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchBusySlots(selectedDate)
+    // Evitamos el error de setState síncrono en efecto usando un microtask
+    // o simplemente disparando el efecto tras el mount.
+    const timer = setTimeout(() => {
+      fetchBusySlots(selectedDate)
+    }, 0)
+    return () => clearTimeout(timer)
   }, [selectedDate, fetchBusySlots])
 
   const isPast = (time: string) => {
@@ -49,15 +66,15 @@ export default function BookingForm({ slug }: BookingFormProps) {
   const isBusy = (time: string) => busySlots.includes(time)
 
   const getSlotStyle = (time: string) => {
-    if (isBusy(time)) return 'bg-red-50 border-red-200 text-red-400 cursor-not-allowed line-through'
-    if (isPast(time)) return 'bg-gray-100 border-gray-200 text-gray-300 cursor-not-allowed'
-    if (selectedTime === time) return 'bg-blue-600 border-blue-600 text-white'
-    return 'bg-white border-gray-200 text-gray-700 hover:border-blue-300 hover:bg-blue-50 cursor-pointer'
+    if (isBusy(time)) return 'bg-red-50 border-red-100 text-red-300 cursor-not-allowed line-through'
+    if (isPast(time)) return 'bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed'
+    if (selectedTime === time) return 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-200 ring-4 ring-blue-500/10'
+    return 'bg-white border-gray-200 text-gray-700 hover:border-blue-400 hover:text-blue-600 cursor-pointer active:scale-95'
   }
 
   async function handleSubmit(formData: FormData) {
     if (!selectedTime) {
-      setError('Seleccioná un horario disponible')
+      setError('Por favor, seleccioná un horario')
       return
     }
 
@@ -73,46 +90,46 @@ export default function BookingForm({ slug }: BookingFormProps) {
       return
     }
 
-    setSuccess(result.data || {})
+    setSuccess((result.data as BookingSuccessData) || {})
     setLoading(false)
   }
 
   if (success) {
     return (
-      <div className="card bg-white border border-green-200 shadow-lg">
-        <div className="card-body items-center text-center py-10">
-          <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
-            <CheckCircle className="w-8 h-8 text-green-600" />
+      <div className="card bg-white border-2 border-green-100 shadow-2xl rounded-[40px] overflow-hidden animate-in zoom-in duration-300">
+        <div className="card-body items-center text-center py-12 md:py-16">
+          <div className="w-20 h-20 rounded-[32px] bg-green-50 flex items-center justify-center mb-6 shadow-inner">
+            <CheckCircle className="w-10 h-10 text-green-500" />
           </div>
-          <h3 className="text-2xl font-bold text-gray-900">¡Turno confirmado!</h3>
-          <div className="mt-4 space-y-1 text-gray-600">
-            <p className="text-lg font-medium text-gray-900">
-              {String((success as Record<string, unknown>).patient_name || '')}
-            </p>
-            <p className="flex items-center justify-center gap-2">
-              <CalendarDays className="w-4 h-4" />
-              {String((success as Record<string, unknown>).date || '')
-                ? new Date(
-                    String((success as Record<string, unknown>).date || '') + 'T00:00:00'
-                  ).toLocaleDateString('es-EC', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })
-                : ''}
-            </p>
-            <p className="flex items-center justify-center gap-2">
-              <Clock className="w-4 h-4" />
-              {String((success as Record<string, unknown>).time || '').slice(0, 5)} hs
-            </p>
+          <h3 className="text-3xl font-black text-gray-900 uppercase tracking-tight">¡Turno Agendado!</h3>
+          <div className="mt-6 space-y-4 w-full">
+            <div className="p-6 bg-gray-50 rounded-3xl border border-gray-100">
+               <p className="text-sm font-black text-gray-400 uppercase tracking-widest mb-1">Paciente</p>
+               <p className="text-xl font-bold text-gray-900">
+                 {success.patient_name || ''}
+               </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+               <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 text-blue-700">
+                 <CalendarDays className="w-5 h-5 mx-auto mb-2" />
+                 <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Fecha</p>
+                 <p className="font-bold">
+                   {success.date ? new Date(success.date + 'T00:00:00').toLocaleDateString('es-EC', { day: 'numeric', month: 'short' }) : ''}
+                 </p>
+               </div>
+               <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100 text-indigo-700">
+                 <Clock className="w-5 h-5 mx-auto mb-2" />
+                 <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Hora</p>
+                 <p className="font-bold">{success.time ? success.time.slice(0, 5) : ''} hs</p>
+               </div>
+            </div>
           </div>
           <button
             onClick={() => {
               setSuccess(null)
               setSelectedTime(null)
             }}
-            className="mt-6 rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+            className="mt-10 btn btn-ghost btn-sm rounded-xl font-black text-gray-400 uppercase tracking-widest"
           >
             Tomar otro turno
           </button>
@@ -122,75 +139,74 @@ export default function BookingForm({ slug }: BookingFormProps) {
   }
 
   return (
-    <div className="card bg-white border border-gray-200 shadow-lg">
-      <div className="card-body p-6 sm:p-8">
-        <div className="text-center mb-6">
-          <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-3">
-            <CalendarDays className="w-6 h-6 text-blue-600" />
-          </div>
-          <h3 className="text-xl font-bold text-gray-900">Tomá tu turno</h3>
-          <p className="text-sm text-gray-500 mt-1">Completá tus datos y elegí fecha y hora</p>
+    <div className="card bg-white border-2 border-gray-50 shadow-2xl rounded-[40px] overflow-hidden">
+      <div className="card-body p-8 md:p-10">
+        <div className="flex items-center gap-3 mb-8">
+           <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+              <Sparkles className="w-5 h-5" />
+           </div>
+           <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight">Agendar Cita</h3>
         </div>
 
         {error && (
-          <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 mb-4 flex items-center gap-2">
-            <X className="w-4 h-4 flex-shrink-0" />
-            {error}
+          <div className="rounded-2xl bg-red-50 border-2 border-red-100 p-4 text-sm text-red-700 mb-8 flex items-center gap-3 animate-shake">
+            <X className="w-5 h-5 shrink-0" />
+            <span className="font-bold">{error}</span>
           </div>
         )}
 
-        <form action={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre completo *</label>
+        <form action={handleSubmit} className="space-y-6">
+          <FormGroup label="Tu Nombre Completo *" icon={User}>
             <input
               type="text" name="name" required
-              placeholder="Juan Pérez"
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              placeholder="Ej: Juan Pérez"
+              className="w-full rounded-2xl border-2 border-gray-100 bg-gray-50/30 px-5 py-4 text-sm font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
             />
+          </FormGroup>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <FormGroup label="WhatsApp / Celular *" icon={Phone}>
+              <input
+                type="tel" name="phone" required
+                placeholder="+593 ..."
+                className="w-full rounded-2xl border-2 border-gray-100 bg-gray-50/30 px-5 py-4 text-sm font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
+              />
+            </FormGroup>
+
+            <FormGroup label="Email (Opcional)" icon={Mail}>
+              <input
+                type="email" name="email"
+                placeholder="tu@email.com"
+                className="w-full rounded-2xl border-2 border-gray-100 bg-gray-50/30 px-5 py-4 text-sm font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
+              />
+            </FormGroup>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono *</label>
-            <input
-              type="tel" name="phone" required
-              placeholder="+593 99 999 9999"
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input
-              type="email" name="email"
-              placeholder="paciente@email.com"
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Fecha *</label>
+          <FormGroup label="Elegí el Día *" icon={CalendarDays}>
             <input
               type="date" name="date" required
               value={selectedDate}
               min={new Date().toISOString().split('T')[0]}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-2xl border-2 border-gray-100 bg-gray-50/30 px-5 py-4 text-sm font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
             />
-          </div>
+          </FormGroup>
 
           {/* Time slots */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Horario *</label>
+          <div className="space-y-4">
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5" /> Seleccionar Horario *
+            </label>
+            
             {fetchingSlots ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
-                <span className="ml-2 text-sm text-gray-500">Cargando horarios...</span>
+              <div className="flex flex-col items-center justify-center py-10 bg-gray-50 rounded-[32px] border-2 border-dashed border-gray-200">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-2" />
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Consultando agenda...</span>
               </div>
             ) : (
-              <div className="space-y-3">
-                {/* Morning */}
+              <div className="space-y-6">
                 <div>
-                  <p className="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wide">Mañana</p>
+                  <p className="text-[10px] font-black text-gray-400 mb-3 ml-2 uppercase tracking-widest">Mañana</p>
                   <div className="grid grid-cols-4 gap-2">
                     {MORNING_SLOTS.map((time) => (
                       <button
@@ -198,16 +214,15 @@ export default function BookingForm({ slug }: BookingFormProps) {
                         type="button"
                         disabled={isBusy(time) || isPast(time)}
                         onClick={() => !isBusy(time) && !isPast(time) && setSelectedTime(time)}
-                        className={`py-2 px-1 rounded-lg text-sm font-medium border transition-colors ${getSlotStyle(time)}`}
+                        className={`py-3 rounded-xl text-xs font-black border-2 transition-all ${getSlotStyle(time)}`}
                       >
                         {time}
                       </button>
                     ))}
                   </div>
                 </div>
-                {/* Afternoon */}
                 <div>
-                  <p className="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wide">Tarde</p>
+                  <p className="text-[10px] font-black text-gray-400 mb-3 ml-2 uppercase tracking-widest">Tarde</p>
                   <div className="grid grid-cols-4 gap-2">
                     {AFTERNOON_SLOTS.map((time) => (
                       <button
@@ -215,7 +230,7 @@ export default function BookingForm({ slug }: BookingFormProps) {
                         type="button"
                         disabled={isBusy(time) || isPast(time)}
                         onClick={() => !isBusy(time) && !isPast(time) && setSelectedTime(time)}
-                        className={`py-2 px-1 rounded-lg text-sm font-medium border transition-colors ${getSlotStyle(time)}`}
+                        className={`py-3 rounded-xl text-xs font-black border-2 transition-all ${getSlotStyle(time)}`}
                       >
                         {time}
                       </button>
@@ -224,54 +239,80 @@ export default function BookingForm({ slug }: BookingFormProps) {
                 </div>
               </div>
             )}
-            {selectedTime && (
-              <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                Seleccionado: {selectedTime} hs
-              </p>
-            )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Motivo</label>
+          <FormGroup label="Motivo de visita" icon={ClipboardList}>
             <textarea
               name="reason" rows={2}
-              placeholder="Ej: Control, limpieza, dolor..."
-              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              placeholder="Contanos brevemente el motivo..."
+              className="w-full rounded-2xl border-2 border-gray-100 bg-gray-50/30 px-5 py-4 text-sm font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
             />
+          </FormGroup>
+
+          {/* Consent checkbox */}
+          <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+            <input
+              type="checkbox"
+              name="consent"
+              required
+              id="consent-data"
+              className="mt-1 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <label htmlFor="consent-data" className="text-xs font-medium text-gray-500 leading-relaxed">
+              Acepto la{' '}
+              <a 
+                href={`/${slug}/privacy`} 
+                target="_blank" 
+                className="text-blue-600 font-bold underline hover:text-blue-700"
+              >
+                Política de Privacidad
+              </a>{' '}
+              y autorizo el tratamiento de mis datos personales para la gestión de turnos 
+              y mi historia clínica odontológica.
+            </label>
           </div>
 
           <button
             type="submit" disabled={loading || !selectedTime}
-            className="w-full rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full rounded-[24px] bg-blue-600 px-8 py-5 text-lg font-black text-white hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 active:scale-[0.98]"
           >
             {loading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Confirmando turno...
+                <Loader2 className="w-6 h-6 animate-spin" />
+                CONFIRMANDO...
               </>
             ) : (
-              'Tomar Turno'
+              <>
+                CONFIRMAR MI TURNO
+                <Sparkles className="w-5 h-5" />
+              </>
             )}
           </button>
         </form>
 
         {/* Legend */}
-        <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t border-gray-100">
-          <div className="flex items-center gap-1.5 text-xs text-gray-500">
-            <div className="w-4 h-4 rounded border border-gray-200 bg-white" />
-            Disponible
+        <div className="flex items-center justify-center gap-6 mt-8 pt-6 border-t border-gray-100">
+          <div className="flex items-center gap-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+            <div className="w-3 h-3 rounded-full border-2 border-gray-200 bg-white" />
+            Libre
           </div>
-          <div className="flex items-center gap-1.5 text-xs text-gray-500">
-            <div className="w-4 h-4 rounded border border-red-200 bg-red-50" />
+          <div className="flex items-center gap-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+            <div className="w-3 h-3 rounded-full border-2 border-red-100 bg-red-50" />
             Ocupado
-          </div>
-          <div className="flex items-center gap-1.5 text-xs text-gray-500">
-            <div className="w-4 h-4 rounded border border-gray-200 bg-gray-100" />
-            Pasado
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+function FormGroup({ label, icon: Icon, children }: { label: string, icon: any, children: React.ReactNode }) {
+  return (
+    <div className="space-y-2">
+      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 flex items-center gap-1.5">
+        <Icon className="w-3.5 h-3.5" /> {label}
+      </label>
+      {children}
     </div>
   )
 }

@@ -75,7 +75,7 @@ const menuItems: MenuItem[] = [
     label: 'Mis Clínicas', 
     icon: QrCode, 
     permissionKey: 'manage_clinic',
-    roles: ['admin', 'supervisor', 'doctor'] // DOCTOR AGREGADO
+    roles: ['admin', 'supervisor', 'doctor']
   },
   { 
     href: '/settings/team', 
@@ -106,27 +106,23 @@ export default function DashboardSidebar({ role, tenant, permissions = {}, plan 
   const params = useParams()
   const slug = (params.slug as string) || ''
 
+  const closeDrawer = () => {
+    const drawer = document.getElementById('dashboard-drawer') as HTMLInputElement
+    if (drawer) drawer.checked = false
+  }
+
   const hasPermission = (item: MenuItem): boolean => {
-    // 1. El Admin es DIOS, pasa siempre
-    if (role === 'admin') return true
-
-    // 2. Si el item requiere roles específicos y el usuario no lo tiene, REBOTA
-    if (item.roles && !item.roles.includes(role)) return false
-
-    // 3. Si el item requiere plan Business y el tenant es Standard, REBOTA
+    if (role === 'admin' || role === 'ceo') return true
     if (item.planRequired === 'business' && plan !== 'business') return false
-    
-    // 4. Jerarquía de Supervisor
+    if (item.roles && !item.roles.includes(role)) return false
     if (role === 'supervisor') return true
-    
-    // 5. Para el resto de roles (Doctor, Nurse, etc.), verificar mapa de permisos
     return permissions[item.permissionKey] === true
   }
 
   return (
-    <aside className="w-64 bg-base-100 shadow-xl flex flex-col">
+    <aside className="w-64 bg-base-100 h-full shadow-xl flex flex-col border-r border-base-200">
       <div className="p-4 border-b border-base-200">
-        <Link href={`/${slug}/dashboard`} className="flex items-center gap-3">
+        <Link href={`/${slug}/dashboard`} onClick={closeDrawer} className="flex items-center gap-3">
           <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
             <ToothIcon className="w-6 h-6 text-primary" />
           </div>
@@ -137,7 +133,7 @@ export default function DashboardSidebar({ role, tenant, permissions = {}, plan 
         </Link>
       </div>
 
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {menuItems
           .filter((item) => hasPermission(item))
           .map((item) => {
@@ -149,10 +145,11 @@ export default function DashboardSidebar({ role, tenant, permissions = {}, plan 
               <Link
                 key={item.href}
                 href={fullPath}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                onClick={closeDrawer}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${
                   isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-base-content/70 hover:bg-base-200 hover:text-base-content'
+                    ? 'bg-primary text-primary-content shadow-lg shadow-primary/20'
+                    : 'text-base-content/60 hover:bg-base-200 hover:text-base-content'
                 }`}
               >
                 <Icon className="w-5 h-5" />
@@ -162,14 +159,14 @@ export default function DashboardSidebar({ role, tenant, permissions = {}, plan 
           })}
       </nav>
 
-      <div className="p-4 border-t border-base-200">
+      <div className="p-4 border-t border-base-200 bg-base-100/50">
         <form action={logout}>
-          <button type="submit" className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-error hover:bg-error/10 w-full transition-colors">
+          <button type="submit" className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-bold text-error hover:bg-error/10 w-full transition-colors">
             <LogOut className="w-5 h-5" />
             Cerrar sesión
           </button>
         </form>
-        <div className="mt-3 text-center text-xs text-gray-400">
+        <div className="mt-3 text-center text-[10px] font-black text-gray-300 uppercase tracking-widest">
           v{APP_VERSION}
         </div>
       </div>

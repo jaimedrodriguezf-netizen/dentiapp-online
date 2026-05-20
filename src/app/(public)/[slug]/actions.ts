@@ -25,6 +25,22 @@ export async function bookAppointment(slug: string, _prevState: unknown, formDat
 
   if (error) return { error: error.message }
 
+  // Record consent if checkbox was checked
+  if (formData.get('consent') === 'on') {
+    const patientId = (data as { patient_id?: string })?.patient_id
+    await supabase.from('consents').insert({
+      tenant_id: tenant.id,
+      patient_id: patientId || null,
+      type: 'data_treatment',
+      metadata: {
+        source: 'booking_form',
+        name: formData.get('name') as string,
+        phone: formData.get('phone') as string,
+      }
+    }).select('id').single()
+    // Ignore consent insert errors — don't block the booking
+  }
+
   return { success: true, data }
 }
 

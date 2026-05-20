@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { updateClinic } from '../actions'
 import { APP_VERSION } from '@/lib/version'
 import Link from 'next/link'
-import { Users, Shield, QrCode, Crown, Info } from 'lucide-react'
+import { Users, Shield, QrCode, Crown, Info, Clock } from 'lucide-react'
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -16,6 +16,7 @@ interface TenantData {
   phone: string | null
   email: string | null
   address: string | null
+  whatsapp_number?: string | null
 }
 
 interface MembershipData {
@@ -32,7 +33,7 @@ export default async function ProfileSettingsPage({ params }: Props) {
 
   const { data: tenantRaw } = await supabase
     .from('tenants')
-    .select('id, name, slug, plan, phone, email, address')
+    .select('id, name, slug, plan, phone, email, address, whatsapp_number')
     .eq('slug', slug)
     .single()
 
@@ -45,7 +46,8 @@ export default async function ProfileSettingsPage({ params }: Props) {
     plan: (tenantRaw.plan as 'standard' | 'business') || 'standard',
     phone: tenantRaw.phone,
     email: tenantRaw.email,
-    address: tenantRaw.address
+    address: tenantRaw.address,
+    whatsapp_number: (tenantRaw as { whatsapp_number?: string }).whatsapp_number
   }
 
   // Obtener membresía para saber el rol
@@ -133,6 +135,17 @@ export default async function ProfileSettingsPage({ params }: Props) {
                 </div>
 
                 <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">WhatsApp (para landing page)</label>
+                  <input
+                    type="tel" name="whatsapp_number"
+                    defaultValue={tenant.whatsapp_number || ''}
+                    disabled={!canEditClinic}
+                    placeholder="+593 9..."
+                    className="w-full rounded-xl border border-gray-200 bg-gray-50/30 px-4 py-3 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all disabled:opacity-60"
+                  />
+                </div>
+
+                <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Dirección Física</label>
                   <textarea
                     name="address" rows={2}
@@ -190,6 +203,21 @@ export default async function ProfileSettingsPage({ params }: Props) {
                 <div>
                   <p className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">Landing Page</p>
                   <p className="text-xs text-gray-500">QR y página pública</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link
+              href={`/${slug}/settings/operating-hours`}
+              className="group block p-4 bg-white border border-gray-200 rounded-2xl hover:border-green-500 hover:shadow-md transition-all"
+            >
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-green-50 text-green-600 rounded-xl group-hover:bg-green-600 group-hover:text-white transition-colors">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900 group-hover:text-green-600 transition-colors">Horarios</p>
+                  <p className="text-xs text-gray-500">Días y horas de atención</p>
                 </div>
               </div>
             </Link>

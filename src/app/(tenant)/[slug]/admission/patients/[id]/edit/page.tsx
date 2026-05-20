@@ -128,6 +128,31 @@ export default async function EditPatientPage({ params }: Props) {
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Estado del Paciente</label>
+            <select
+              name="status"
+              defaultValue={patient.status || 'active'}
+              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="active">Activo</option>
+              <option value="in_treatment">En Tratamiento</option>
+              <option value="inactive">Inactivo</option>
+              <option value="discharged">Alta</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Observaciones</label>
+            <textarea
+              name="observations"
+              defaultValue={patient.observations || ''}
+              className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              rows={3}
+              placeholder="Notas clínicas, alergias, medicación..."
+            />
+          </div>
+
           <div className="flex gap-3 pt-2">
             <button
               type="submit"
