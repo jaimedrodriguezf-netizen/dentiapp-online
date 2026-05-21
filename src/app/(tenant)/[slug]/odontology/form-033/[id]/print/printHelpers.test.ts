@@ -1,74 +1,11 @@
 import { describe, it, expect } from 'vitest'
-
-/* ─── Print formatting helpers ─── */
-
-function formatVitalSigns(vs: any): string[] {
-  if (!vs) return []
-  const lines: string[] = []
-  if (vs.blood_pressure) lines.push(`TA: ${vs.blood_pressure} mmHg`)
-  if (vs.heart_rate) lines.push(`FC: ${vs.heart_rate} lpm`)
-  if (vs.respiratory_rate) lines.push(`FR: ${vs.respiratory_rate} rpm`)
-  if (vs.temperature) lines.push(`Temp: ${vs.temperature} °C`)
-  if (vs.spo2) lines.push(`SpO2: ${vs.spo2}%`)
-  if (vs.weight) lines.push(`Peso: ${vs.weight} kg`)
-  if (vs.height) lines.push(`Talla: ${vs.height} cm`)
-  if (vs.bmi) lines.push(`IMC: ${vs.bmi}`)
-  return lines
-}
-
-function formatClinicalExam(stomatognathic: string | null, oralHygiene: any, fluorosis: string | null, malocclusion: string | null): string[] {
-  const lines: string[] = []
-
-  if (stomatognathic) {
-    const labels: Record<string, string> = {
-      labios: 'Labios', mejillas: 'Mejillas', atm: 'ATM',
-      musculos: 'Músculos masticatorios', piso_boca: 'Piso de boca',
-      lengua: 'Lengua', paladar_duro: 'Paladar duro', paladar_blando: 'Paladar blando',
-      gingival: 'Encía', periodontal: 'Periodontal',
-    }
-    const affected = stomatognathic.split(',').filter(Boolean).map(s => labels[s] || s).join(', ')
-    lines.push(`Estomatognático: ${affected}`)
-  }
-
-  if (oralHygiene?.rating) {
-    const labels: Record<string, string> = { buena: 'Buena', regular: 'Regular', mala: 'Mala' }
-    let text = `Higiene oral: ${labels[oralHygiene.rating] || oralHygiene.rating}`
-    if (oralHygiene.plaque_index != null) text += ` (Índice de placa: ${oralHygiene.plaque_index}%)`
-    lines.push(text)
-  }
-
-  if (fluorosis) {
-    const labels: Record<string, string> = {
-      dudosa: 'Dudosa', muy_leve: 'Muy leve', leve: 'Leve',
-      moderada: 'Moderada', severa: 'Severa',
-    }
-    lines.push(`Fluorosis: ${labels[fluorosis] || fluorosis}`)
-  }
-
-  if (malocclusion) {
-    try {
-      const m = JSON.parse(malocclusion)
-      const classLabels: Record<string, string> = { clase_i: 'Clase I', clase_ii: 'Clase II', clase_iii: 'Clase III' }
-      let text = `Maloclusión: ${classLabels[m.class] || m.class}`
-      if (m.overjet != null) text += ` | Overjet: ${m.overjet}mm`
-      if (m.overbite != null) text += ` | Overbite: ${m.overbite}mm`
-      lines.push(text)
-    } catch { lines.push(`Maloclusión: ${malocclusion}`) }
-  }
-
-  return lines
-}
-
-function formatIndex(name: string, data: any): string | null {
-  if (!data) return null
-  const labels = name === 'CPO-D'
-    ? ['C', 'P', 'O']
-    : ['C', 'E', 'O']
-  const v1 = data.caries ?? 0
-  const v2 = data.missing ?? data.extraction ?? 0
-  const v3 = data.filled ?? 0
-  return `${name}: ${labels[0]}:${v1} | ${labels[1]}:${v2} | ${labels[2]}:${v3} | Total:${data.total ?? (v1 + v2 + v3)}`
-}
+import {
+  formatVitalSigns,
+  formatClinicalExam,
+  formatIndex,
+  esc,
+  generatePrescriptionHTML,
+} from './printHelpers'
 
 /* ─── Tests ─── */
 
@@ -125,5 +62,62 @@ describe('formatIndex', () => {
 
   it('returns null for null data', () => {
     expect(formatIndex('CPO-D', null)).toBeNull()
+  })
+})
+
+describe('esc', () => {
+  it('escapes special HTML characters', () => {
+    expect(esc('John & Doe <developer>')).toBe('John &amp; Doe &lt;developer&gt;')
+    expect(esc(null)).toBe('')
+    expect(esc(123)).toBe('123')
+  })
+})
+
+describe('generatePrescriptionHTML', () => {
+  it('generates HTML containing patient and prescription data', () => {
+    const record = {
+      opening_date: '2026-05-21T10:00:00Z',
+      patients: {
+        first_name: 'Jaime',
+        last_name: 'Rodriguez',
+        cedula: '1723456789',
+      },
+    }
+    const prescriptions = [
+      {
+        medication_name: 'Paracetamol 500mg',
+        quantity: 10,
+        dosage: '1 tableta',
+        frequency: 'cada 8 horas',
+        duration: '3 dias',
+        instructions: 'Tomar despues de las comidas',
+      },
+    ]
+
+    const html = generatePrescriptionHTML(record, prescriptions)
+    
+    expect(html).toContain('Jaime')
+    expect(html).toContain('Rodriguez')
+    expect(html).toContain('1723456789')
+    expect(html).toContain('Paracetamol 500mg')
+    expect(html).toContain('(Cant: 10)')
+    expect(html).toContain('1 tableta — cada 8 horas — 3 dias')
+    expect(html).toContain('Tomar despues de las comidas')
+    expect(html).toContain('Firma del profesional')
+  })
+
+  it('displays fallback message when no prescriptions exist', () => {
+    const record = {
+      opening_date: '2026-05-21T10:00:00Z',
+      patients: {
+        first_name: 'Maria',
+        last_name: 'Perez',
+        cedula: null,
+      },
+    }
+    const html = generatePrescriptionHTML(record, [])
+    expect(html).toContain('No hay medicamentos recetados')
+    expect(html).toContain('Maria')
+    expect(html).toContain('—') // Cedula fallback
   })
 })

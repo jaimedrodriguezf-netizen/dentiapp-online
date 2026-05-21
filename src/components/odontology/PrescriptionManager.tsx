@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, Save, Loader2, FileText, Zap, Sparkles } from 'lucide-react'
+import { Plus, Trash2, Save, Loader2, FileText, Zap, Sparkles, Printer } from 'lucide-react'
 import VademecumSearch from './VademecumSearch'
 
 interface PrescriptionItem {
@@ -291,6 +291,18 @@ export default function PrescriptionManager({ slug, recordId }: Props) {
         </button>
 
         <div className="flex-1" />
+
+        {items.some((item) => item.medication_name.trim()) && (
+          <a
+            href={`/${slug}/odontology/form-033/${recordId}/print?type=prescription`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-6 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-all active:scale-95 shadow-sm"
+          >
+            <Printer className="w-4 h-4 text-gray-500" />
+            Imprimir Receta
+          </a>
+        )}
 
         <button
           type="button"

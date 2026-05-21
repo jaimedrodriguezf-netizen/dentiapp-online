@@ -220,4 +220,53 @@ describe('Form033Wizard E2E / Flow Integration Tests', () => {
     expect(submittedData.get('vital_hr')).toBe('72')
     expect(submittedData.get('odontogram_teeth')).toBe('[]')
   })
+
+  it('Flujo 4: Registro con Recetario Integrado', async () => {
+    mockCreateAction.mockClear()
+    render(
+      <Form033Wizard
+        slug="dentiapp"
+        patientId="pat-123"
+        patientName="Juan Pérez"
+        createAction={mockCreateAction}
+      />
+    )
+
+    // Buscar el botón de plantilla rápida 'Post-Extracción'
+    const templateBtn = screen.getByRole('button', { name: /Post-Extracción/i })
+    expect(templateBtn).toBeInTheDocument()
+    fireEvent.click(templateBtn)
+
+    // Debería agregar los medicamentos de la plantilla: Ibuprofeno y Amoxicilina
+    // Verificamos que el input oculto 'prescriptions' tenga estos medicamentos
+    const prescriptionsHidden = document.querySelector('input[name="prescriptions"]') as HTMLInputElement
+    expect(prescriptionsHidden).toBeInTheDocument()
+
+    const parsedRx = JSON.parse(prescriptionsHidden.value)
+    expect(parsedRx).toHaveLength(2)
+    expect(parsedRx[0].medication_name).toBe('Ibuprofeno')
+    expect(parsedRx[1].medication_name).toBe('Amoxicilina')
+
+    // También verificamos que se puedan editar y agregar más
+    const addMedBtn = screen.getByRole('button', { name: /Agregar Medicamento/i })
+    expect(addMedBtn).toBeInTheDocument()
+    fireEvent.click(addMedBtn)
+
+    // El tercer medicamento inicialmente está vacío, pero se filtra al enviar
+    // Presionemos el botón flotante "Guardar Todo"
+    const saveBtns = screen.getAllByRole('button', { name: /Guardar Todo/i })
+    fireEvent.click(saveBtns[0])
+
+    expect(mockCreateAction).toHaveBeenCalled()
+    const submittedData = mockCreateAction.mock.calls[0][0] as FormData
+    
+    // Al guardar, las recetas vacías se filtran, así que solo deben quedar las 2 de la plantilla
+    const submittedRxRaw = submittedData.get('prescriptions') as string
+    expect(submittedRxRaw).toBeDefined()
+    const submittedRx = JSON.parse(submittedRxRaw)
+    expect(submittedRx).toHaveLength(2)
+    expect(submittedRx[0].medication_name).toBe('Ibuprofeno')
+    expect(submittedRx[1].medication_name).toBe('Amoxicilina')
+  })
 })
+

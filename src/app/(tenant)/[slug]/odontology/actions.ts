@@ -3,6 +3,107 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
+export interface PatientRow {
+  id: string
+  first_name: string
+  last_name: string
+  cedula: string | null
+  birth_date?: string | null
+  gender?: string | null
+  phone?: string | null
+  address?: string | null
+  tenant_id: string
+}
+
+export interface VitalSignsData {
+  blood_pressure?: string | null
+  heart_rate?: number | string | null
+  respiratory_rate?: number | string | null
+  temperature?: number | string | null
+  spo2?: number | string | null
+  weight?: number | string | null
+  height?: number | string | null
+  bmi?: number | string | null
+}
+
+export interface OralHygieneData {
+  rating?: string | null
+  plaque_index?: number | null
+}
+
+export interface DiagnosisData {
+  code?: string
+  description?: string
+  text?: string
+  type?: string
+}
+
+export interface StomatognathicData {
+  regions?: Array<{ id: string; finding: string }>
+  free_text?: string
+}
+
+export interface DentalRecordRow {
+  id: string
+  patient_id: string
+  opening_date: string | null
+  control_date?: string | null
+  consultation_reason: string | null
+  current_problem?: { text?: string } | string | null
+  diagnosis?: DiagnosisData | null
+  vital_signs?: VitalSignsData | null
+  stomatognathic_exam?: StomatognathicData | null
+  personal_history?: unknown
+  family_history?: unknown
+  complementary_exams?: unknown
+  patients?: PatientRow | null
+  pregnant?: boolean | null
+  personal_family_history?: string | null
+  oral_hygiene?: OralHygieneData | null
+  periodontal_disease?: string | null
+  fluorosis?: string | null
+  malocclusion?: { class?: string; overjet?: number; overbite?: number } | null
+  cpod_index?: { caries?: number; missing?: number; filled?: number; total?: number } | null
+  ceod_index?: { caries?: number; extraction?: number; filled?: number; total?: number } | null
+  diagnostic_plan?: string | null
+  educational_plan?: string | null
+  therapeutic_plan?: string | null
+  treatment?: { text?: string } | string | null
+  tenant_id: string
+}
+
+export interface PrescriptionData {
+  id: string
+  medication_name: string
+  dosage: string | null
+  frequency: string | null
+  duration: string | null
+  quantity: number | null
+  instructions: string | null
+  tenant_id: string
+  dental_record_id: string
+}
+
+export interface ToothData {
+  id: string
+  tooth_number: number
+  status: string
+  surfaces?: Record<string, string> | null
+  tenant_id: string
+  dental_record_id: string
+}
+
+export interface TreatmentSessionData {
+  id: string
+  session_number: number
+  session_date: string | null
+  diagnoses_complications: string | null
+  procedures: string | null
+  prescriptions: string | null
+  signature: string | null
+  dental_record_id: string
+}
+
 async function getTenantId(slug: string) {
   const supabase = await createClient()
   const { data: tenant } = await supabase
@@ -13,7 +114,7 @@ async function getTenantId(slug: string) {
   return tenant?.id
 }
 
-export async function getPatient(slug: string, patientId: string) {
+export async function getPatient(slug: string, patientId: string): Promise<PatientRow | null> {
   const supabase = await createClient()
   const tenantId = await getTenantId(slug)
   if (!tenantId) return null
@@ -25,10 +126,10 @@ export async function getPatient(slug: string, patientId: string) {
     .eq('tenant_id', tenantId)
     .single()
 
-  return patient
+  return patient as PatientRow | null
 }
 
-export async function getDentalRecords(slug: string, patientId: string) {
+export async function getDentalRecords(slug: string, patientId: string): Promise<DentalRecordRow[]> {
   const supabase = await createClient()
   const tenantId = await getTenantId(slug)
   if (!tenantId) return []
@@ -40,10 +141,10 @@ export async function getDentalRecords(slug: string, patientId: string) {
     .eq('tenant_id', tenantId)
     .order('opening_date', { ascending: false })
 
-  return records ?? []
+  return (records as DentalRecordRow[]) ?? []
 }
 
-export async function getDentalRecord(slug: string, recordId: string) {
+export async function getDentalRecord(slug: string, recordId: string): Promise<DentalRecordRow | null> {
   const supabase = await createClient()
   const tenantId = await getTenantId(slug)
   if (!tenantId) return null
@@ -55,10 +156,10 @@ export async function getDentalRecord(slug: string, recordId: string) {
     .eq('tenant_id', tenantId)
     .single()
 
-  return record
+  return record as DentalRecordRow | null
 }
 
-export async function createDentalRecord(slug: string, patientId: string, formData: FormData) {
+export async function createDentalRecord(slug: string, patientId: string, formData: FormData): Promise<{ error: string } | void> {
   const supabase = await createClient()
   const tenantId = await getTenantId(slug)
   if (!tenantId) return { error: 'No tienes una clínica activa' }
@@ -74,10 +175,26 @@ export async function createDentalRecord(slug: string, patientId: string, formDa
   let complementaryExams = null
   let stomatognathicExam = null
 
-  try { if (personalHistoryRaw) personalHistory = JSON.parse(personalHistoryRaw) } catch {}
-  try { if (familyHistoryRaw) familyHistory = JSON.parse(familyHistoryRaw) } catch {}
-  try { if (complementaryExamsRaw) complementaryExams = JSON.parse(complementaryExamsRaw) } catch {}
-  try { if (stomatognathicRaw) stomatognathicExam = JSON.parse(stomatognathicRaw) } catch {}
+  try { 
+    if (personalHistoryRaw) personalHistory = JSON.parse(personalHistoryRaw) 
+  } catch (err) {
+    console.error('Failed to parse personal history JSON', err)
+  }
+  try { 
+    if (familyHistoryRaw) familyHistory = JSON.parse(familyHistoryRaw) 
+  } catch (err) {
+    console.error('Failed to parse family history JSON', err)
+  }
+  try { 
+    if (complementaryExamsRaw) complementaryExams = JSON.parse(complementaryExamsRaw) 
+  } catch (err) {
+    console.error('Failed to parse complementary exams JSON', err)
+  }
+  try { 
+    if (stomatognathicRaw) stomatognathicExam = JSON.parse(stomatognathicRaw) 
+  } catch (err) {
+    console.error('Failed to parse stomatognathic exam JSON', err)
+  }
 
   const { data: record, error } = await supabase
     .from('dental_records')
@@ -117,18 +234,24 @@ export async function createDentalRecord(slug: string, patientId: string, formDa
     try {
       const teeth = JSON.parse(odontogramTeethRaw)
       if (Array.isArray(teeth) && teeth.length > 0) {
-        await supabase.from('odontogram_teeth').upsert(
-          teeth.map((tooth: { tooth_number: number; status: string; surfaces?: Record<string, string> }) => ({
+        const validatedTeeth = teeth
+          .filter((t): t is { tooth_number: number; status: string; surfaces?: Record<string, string> } => 
+            t && typeof t === 'object' && 'tooth_number' in t && 'status' in t
+          )
+          .map((tooth) => ({
             dental_record_id: record.id,
             tenant_id: tenantId,
-            tooth_number: tooth.tooth_number,
-            status: tooth.status,
-            surfaces: tooth.surfaces || null,
-          })),
-          { onConflict: 'dental_record_id,tooth_number' }
-        )
+            tooth_number: Number(tooth.tooth_number),
+            status: String(tooth.status),
+            surfaces: (tooth.surfaces && typeof tooth.surfaces === 'object') ? tooth.surfaces : null,
+          }))
+        if (validatedTeeth.length > 0) {
+          await supabase.from('odontogram_teeth').upsert(validatedTeeth, { onConflict: 'dental_record_id,tooth_number' })
+        }
       }
-    } catch {}
+    } catch (err) {
+      console.error('Failed to parse and save odontogram teeth', err)
+    }
   }
 
   // Save treatment sessions
@@ -137,26 +260,61 @@ export async function createDentalRecord(slug: string, patientId: string, formDa
     try {
       const sessions = JSON.parse(sessionsRaw)
       if (Array.isArray(sessions) && sessions.length > 0) {
-        await supabase.from('treatment_sessions').insert(
-          sessions.map((s: Record<string, unknown>) => ({
+        const validatedSessions = sessions
+          .filter((s): s is Record<string, unknown> => s && typeof s === 'object')
+          .map((s, index) => ({
             dental_record_id: record.id,
-            session_number: s.session_number as number,
-            session_date: (s.session_date || s.date || null) as string | null,
-            diagnoses_complications: (s.diagnoses_complications || s.diagnosis || null) as string | null,
-            procedures: (s.procedures || s.procedure || null) as string | null,
-            prescriptions: (s.prescriptions || null) as string | null,
-            signature: (s.signature || null) as string | null,
+            session_number: typeof s.session_number === 'number' ? s.session_number : index + 1,
+            session_date: (s.session_date || s.date || null) ? String(s.session_date || s.date) : null,
+            diagnoses_complications: (s.diagnoses_complications || s.diagnosis || null) ? String(s.diagnoses_complications || s.diagnosis) : null,
+            procedures: (s.procedures || s.procedure || null) ? String(s.procedures || s.procedure) : null,
+            prescriptions: s.prescriptions ? String(s.prescriptions) : null,
+            signature: s.signature ? String(s.signature) : null,
           }))
-        )
+        if (validatedSessions.length > 0) {
+          await supabase.from('treatment_sessions').insert(validatedSessions)
+        }
       }
-    } catch {}
+    } catch (err) {
+      console.error('Failed to parse and save treatment sessions', err)
+    }
+  }
+
+  // Save prescriptions
+  const prescriptionsRaw = formData.get('prescriptions') as string
+  if (prescriptionsRaw) {
+    try {
+      const prescriptions = JSON.parse(prescriptionsRaw)
+      if (Array.isArray(prescriptions) && prescriptions.length > 0) {
+        const validatedPrescriptions = prescriptions
+          .filter((p): p is { medication_id?: string | null; medication_name: string; dosage: string; frequency: string; duration: string; instructions: string; quantity: number | null } => 
+            p && typeof p === 'object' && 'medication_name' in p
+          )
+          .map((p) => ({
+            medication_id: p.medication_id || null,
+            medication_name: String(p.medication_name),
+            dosage: p.dosage ? String(p.dosage) : '',
+            frequency: p.frequency ? String(p.frequency) : '',
+            duration: p.duration ? String(p.duration) : '',
+            instructions: p.instructions ? String(p.instructions) : '',
+            quantity: p.quantity ? Number(p.quantity) : null,
+          }))
+        if (validatedPrescriptions.length > 0) {
+          await savePrescriptions(slug, record.id, validatedPrescriptions)
+        }
+      }
+    } catch (err) {
+      console.error('Failed to parse and save prescriptions', err)
+    }
   }
 
   redirect(`/${slug}/odontology/form-033/${record.id}`)
 }
 
-export async function updateDentalRecord(slug: string, recordId: string, formData: FormData) {
+export async function updateDentalRecord(slug: string, recordId: string, formData: FormData): Promise<{ error: string } | void> {
   const supabase = await createClient()
+  const tenantId = await getTenantId(slug)
+  if (!tenantId) return { error: 'No tienes una clínica activa' }
 
   // Parse JSONB fields
   const personalHistoryRaw = formData.get('personal_history') as string
@@ -169,10 +327,26 @@ export async function updateDentalRecord(slug: string, recordId: string, formDat
   let complementaryExams = null
   let stomatognathicExam = null
 
-  try { if (personalHistoryRaw) personalHistory = JSON.parse(personalHistoryRaw) } catch {}
-  try { if (familyHistoryRaw) familyHistory = JSON.parse(familyHistoryRaw) } catch {}
-  try { if (complementaryExamsRaw) complementaryExams = JSON.parse(complementaryExamsRaw) } catch {}
-  try { if (stomatognathicRaw) stomatognathicExam = JSON.parse(stomatognathicRaw) } catch {}
+  try { 
+    if (personalHistoryRaw) personalHistory = JSON.parse(personalHistoryRaw) 
+  } catch (err) {
+    console.error('Failed to parse personal history JSON in update', err)
+  }
+  try { 
+    if (familyHistoryRaw) familyHistory = JSON.parse(familyHistoryRaw) 
+  } catch (err) {
+    console.error('Failed to parse family history JSON in update', err)
+  }
+  try { 
+    if (complementaryExamsRaw) complementaryExams = JSON.parse(complementaryExamsRaw) 
+  } catch (err) {
+    console.error('Failed to parse complementary exams JSON in update', err)
+  }
+  try { 
+    if (stomatognathicRaw) stomatognathicExam = JSON.parse(stomatognathicRaw) 
+  } catch (err) {
+    console.error('Failed to parse stomatognathic exam JSON in update', err)
+  }
 
   const { error } = await supabase
     .from('dental_records')
@@ -199,6 +373,7 @@ export async function updateDentalRecord(slug: string, recordId: string, formDat
       complementary_exams: complementaryExams,
     })
     .eq('id', recordId)
+    .eq('tenant_id', tenantId)
 
   if (error) return { error: error.message }
 
@@ -280,11 +455,11 @@ function buildMalocclusion(formData: FormData) {
 
   if (!malClass && !overjet && !overbite) return null
 
-  return JSON.stringify({
+  return {
     ...(malClass && { class: malClass }),
     ...(overjet && { overjet: parseFloat(overjet) }),
     ...(overbite && { overbite: parseFloat(overbite) }),
-  })
+  }
 }
 
 /** Build CPO-D or CEO-D JSONB */
@@ -303,7 +478,7 @@ function buildIndex(formData: FormData, prefix: 'cpod' | 'ceod') {
 
 /* ───────── Treatment Sessions ───────── */
 
-export async function getTreatmentSessions(slug: string, recordId: string) {
+export async function getTreatmentSessions(slug: string, recordId: string): Promise<TreatmentSessionData[]> {
   const supabase = await createClient()
   const tenantId = await getTenantId(slug)
   if (!tenantId) return []
@@ -314,12 +489,12 @@ export async function getTreatmentSessions(slug: string, recordId: string) {
     .eq('dental_record_id', recordId)
     .order('session_number', { ascending: true })
 
-  return data ?? []
+  return (data as TreatmentSessionData[]) ?? []
 }
 
 /* ───────── Prescriptions (recetas) ───────── */
 
-export async function getPrescriptions(slug: string, recordId: string) {
+export async function getPrescriptions(slug: string, recordId: string): Promise<PrescriptionData[]> {
   const supabase = await createClient()
   const tenantId = await getTenantId(slug)
   if (!tenantId) return []
@@ -331,7 +506,7 @@ export async function getPrescriptions(slug: string, recordId: string) {
     .eq('tenant_id', tenantId)
     .order('created_at')
 
-  return data ?? []
+  return (data as PrescriptionData[]) ?? []
 }
 
 export async function savePrescriptions(
@@ -346,7 +521,7 @@ export async function savePrescriptions(
     instructions: string
     quantity: number | null
   }[]
-) {
+): Promise<{ error?: string; success?: boolean }> {
   const supabase = await createClient()
   const tenantId = await getTenantId(slug)
   if (!tenantId) return { error: 'No tienes una clínica activa' }
@@ -378,7 +553,7 @@ export async function savePrescriptions(
   return { success: true }
 }
 
-export async function getOdontogramTeeth(slug: string, recordId: string) {
+export async function getOdontogramTeeth(slug: string, recordId: string): Promise<ToothData[]> {
   const supabase = await createClient()
   const tenantId = await getTenantId(slug)
   if (!tenantId) return []
@@ -389,14 +564,14 @@ export async function getOdontogramTeeth(slug: string, recordId: string) {
     .eq('dental_record_id', recordId)
     .eq('tenant_id', tenantId)
 
-  return teeth ?? []
+  return (teeth as ToothData[]) ?? []
 }
 
 export async function saveOdontogramTeeth(
   slug: string,
   recordId: string,
   teeth: { tooth_number: number; status: string; surfaces?: Record<string, string> }[]
-) {
+): Promise<{ error?: string; success?: boolean }> {
   const supabase = await createClient()
   const tenantId = await getTenantId(slug)
   if (!tenantId) return { error: 'No tienes una clínica activa' }

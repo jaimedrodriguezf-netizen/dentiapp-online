@@ -3,16 +3,67 @@
 import { useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Printer } from 'lucide-react'
+import { generatePrescriptionHTML, PrescriptionItem } from './printHelpers'
 
-interface PrintContentProps {
-  record: Record<string, any>
-  teeth: any[]
-  prescriptions: any[]
-  slug: string
-  id: string
+interface PatientData {
+  first_name?: string | null
+  last_name?: string | null
+  cedula?: string | null
 }
 
-export default function PrintContent({ record, prescriptions, slug, id }: PrintContentProps) {
+interface VitalSignsData {
+  blood_pressure?: string | null
+  heart_rate?: number | string | null
+  respiratory_rate?: number | string | null
+  temperature?: number | string | null
+  spo2?: number | string | null
+  weight?: number | string | null
+  height?: number | string | null
+  bmi?: number | string | null
+}
+
+interface OralHygieneData {
+  rating?: string | null
+  plaque_index?: number | null
+}
+
+interface DiagnosisData {
+  code?: string
+  description?: string
+  text?: string
+}
+
+interface DentalRecord {
+  patients?: PatientData | null
+  vital_signs?: VitalSignsData | null
+  oral_hygiene?: OralHygieneData | null
+  malocclusion?: string | { class?: string; overjet?: number; overbite?: number } | null
+  opening_date?: string | null
+  control_date?: string | null
+  consultation_reason?: string | null
+  current_problem?: { text?: string } | string | null
+  personal_family_history?: string | null
+  diagnostic_plan?: string | null
+  diagnosis?: DiagnosisData | null
+  stomatognathic_exam?: string | { regions?: Array<{ id: string; finding: string }>; free_text?: string } | null
+  fluorosis?: string | null
+  cpod_index?: { caries?: number; missing?: number; filled?: number; total?: number } | null
+  ceod_index?: { caries?: number; extraction?: number; filled?: number; total?: number } | null
+  therapeutic_plan?: string | null
+  educational_plan?: string | null
+  treatment?: { text?: string } | string | null
+}
+
+interface PrintContentProps {
+  record: DentalRecord
+  teeth: unknown[]
+  prescriptions: PrescriptionItem[]
+  slug: string
+  id: string
+  type?: string
+}
+
+export default function PrintContent({ record, prescriptions, slug, id, type }: PrintContentProps) {
   const printRef = useRef<HTMLDivElement>(null)
   const hasTriggered = useRef(false)
 
@@ -20,11 +71,25 @@ export default function PrintContent({ record, prescriptions, slug, id }: PrintC
     const el = printRef.current
     if (!el) return
 
-    const patient = record.patients as Record<string, any> | undefined
-    const vs = record.vital_signs as Record<string, any> | null
-    const oh = record.oral_hygiene as Record<string, any> | null
+    if (type === 'prescription') {
+      el.innerHTML = generatePrescriptionHTML(record, prescriptions)
+      setTimeout(() => window.print(), 100)
+      return
+    }
+
+    const patient = record.patients
+    const vs = record.vital_signs
+    const oh = record.oral_hygiene
     const mal = (() => {
-      try { return record.malocclusion ? JSON.parse(record.malocclusion) as Record<string, any> : null } catch { return null }
+      try {
+        if (!record.malocclusion) return null
+        if (typeof record.malocclusion === 'string') {
+          return JSON.parse(record.malocclusion) as Record<string, string | number | null>
+        }
+        return record.malocclusion as unknown as Record<string, string | number | null>
+      } catch {
+        return null
+      }
     })()
 
     function esc(text: string | number | null | undefined): string {
@@ -36,18 +101,18 @@ export default function PrintContent({ record, prescriptions, slug, id }: PrintC
 
     function sec(title: string, content: unknown) {
       const text = typeof content === 'object' && content !== null
-        ? (content as Record<string, any>).text as string | undefined
+        ? (content as { text?: string }).text
         : content as string | undefined
       if (!text) return ''
       return `<div class="print-section"><h3>${esc(title)}</h3><p>${esc(text)}</p></div>`
     }
 
-    function diag(diag: Record<string, any> | null | undefined) {
-      if (!diag) return ''
-      if (diag.code) {
-        return `<div class="print-section"><h3>6. Diagnóstico (CIE-10)</h3><p><span class="print-chip">${esc(diag.code)}</span> ${esc(diag.description || '')}</p>${diag.text ? `<p>${esc(diag.text)}</p>` : ''}</div>`
+    function diag(d: DiagnosisData | null | undefined) {
+      if (!d) return ''
+      if (d.code) {
+        return `<div class="print-section"><h3>6. Diagnóstico (CIE-10)</h3><p><span class="print-chip">${esc(d.code)}</span> ${esc(d.description || '')}</p>${d.text ? `<p>${esc(d.text)}</p>` : ''}</div>`
       }
-      return sec('6. Diagnóstico', diag)
+      return sec('6. Diagnóstico', d)
     }
 
     el.innerHTML = `
@@ -87,7 +152,7 @@ export default function PrintContent({ record, prescriptions, slug, id }: PrintC
       </div>
 
       ${sec('1. Motivo de consulta', record.consultation_reason)}
-      ${sec('2. Problema actual', record.current_problem?.text || record.current_problem)}
+      ${sec('2. Problema actual', record.current_problem)}
       ${sec('3. Antecedentes personales y familiares', record.personal_family_history)}
       ${sec('4. Plan diagnóstico', record.diagnostic_plan)}
       ${diag(record.diagnosis)}
@@ -109,7 +174,11 @@ export default function PrintContent({ record, prescriptions, slug, id }: PrintC
       <div class="print-section">
         <h3>6. Examen clínico</h3>
         ${[
-          record.stomatognathic_exam && `<p><span class="print-label">Estomatognático:</span> ${esc(record.stomatognathic_exam)}</p>`,
+          record.stomatognathic_exam && `<p><span class="print-label">Estomatognático:</span> ${esc(
+            typeof record.stomatognathic_exam === 'string'
+              ? record.stomatognathic_exam
+              : record.stomatognathic_exam.free_text || ''
+          )}</p>`,
           oh?.rating && `<p><span class="print-label">Higiene oral:</span> ${esc(oh.rating)}${oh.plaque_index != null ? ` (Índice: ${oh.plaque_index}%)` : ''}</p>`,
           record.fluorosis && `<p><span class="print-label">Fluorosis:</span> ${esc(record.fluorosis)}</p>`,
           mal && `<p><span class="print-label">Maloclusión:</span> ${mal.class || '—'}${mal.overjet != null ? ` | Overjet: ${mal.overjet}mm` : ''}${mal.overbite != null ? ` | Overbite: ${mal.overbite}mm` : ''}</p>`,
@@ -126,12 +195,12 @@ export default function PrintContent({ record, prescriptions, slug, id }: PrintC
 
       ${sec('8. Plan terapéutico', record.therapeutic_plan)}
       ${sec('9. Plan educativo', record.educational_plan)}
-      ${sec('10. Tratamiento realizado', record.treatment?.text || record.treatment)}
+      ${sec('10. Tratamiento realizado', record.treatment)}
 
       ${prescriptions.length > 0 ? `
       <div class="print-section">
         <h3>Receta médica</h3>
-        ${prescriptions.map((rx: Record<string, any>) => `
+        ${prescriptions.map((rx) => `
           <div class="print-rx">
             <h4>${esc(rx.medication_name)}</h4>
             <p>${[rx.dosage, rx.frequency, rx.duration].filter(Boolean).join(' — ')}${rx.quantity ? ` | Cant: ${rx.quantity}` : ''}</p>
@@ -151,7 +220,7 @@ export default function PrintContent({ record, prescriptions, slug, id }: PrintC
     `
 
     setTimeout(() => window.print(), 100)
-  }, [record, prescriptions])
+  }, [record, prescriptions, type])
 
   useEffect(() => {
     if (hasTriggered.current) return
@@ -176,7 +245,9 @@ export default function PrintContent({ record, prescriptions, slug, id }: PrintC
             Volver
           </Link>
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Imprimir Formulario 033</h2>
+            <h2 className="text-2xl font-bold text-gray-900">
+              {type === 'prescription' ? 'Imprimir Receta Médica' : 'Imprimir Formulario 033'}
+            </h2>
             <p className="text-gray-500 mt-1">Se abrirá el diálogo de impresión automáticamente</p>
           </div>
           <button

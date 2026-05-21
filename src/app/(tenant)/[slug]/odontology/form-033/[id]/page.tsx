@@ -1,4 +1,4 @@
-import { getDentalRecord, getPrescriptions, getOdontogramTeeth, getTreatmentSessions } from '../../actions'
+import { getDentalRecord, getPrescriptions, getOdontogramTeeth, getTreatmentSessions, DiagnosisData, VitalSignsData, OralHygieneData, StomatognathicData, DentalRecordRow } from '../../actions'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, Edit, Printer, Activity, FileText, Pill, Calendar, CreditCard, User, Baby, Stethoscope } from 'lucide-react'
@@ -35,12 +35,7 @@ interface ToothData {
   surfaces?: Record<string, string>
 }
 
-interface DiagnosisData {
-  code?: string
-  description?: string
-  text?: string
-  type?: string
-}
+
 
 interface TreatmentSessionData {
   id: string
@@ -52,10 +47,7 @@ interface TreatmentSessionData {
   signature: string | null
 }
 
-interface StomatognathicData {
-  regions?: Array<{ id: string; finding: string }>
-  free_text?: string
-}
+
 
 const regionLabels: Record<string, string> = {
   labios: 'LABIOS',
@@ -106,17 +98,17 @@ interface DentalRecordData {
   patient_id: string
   consultation_reason: string
   current_problem: { text: string } | string | null
-  diagnosis: unknown
-  vital_signs: unknown
-  stomatognathic_exam: unknown
-  personal_history: unknown
-  family_history: unknown
-  complementary_exams: unknown
+  diagnosis: DiagnosisData | null
+  vital_signs: VitalSignsData | null
+  stomatognathic_exam: StomatognathicData | null
+  personal_history: Record<string, boolean | string> | null
+  family_history: Record<string, boolean | string> | null
+  complementary_exams: { hematology?: string; blood_chemistry?: string; xray?: string; other?: string } | null
   patients: PatientData
   opening_date: string | null
   pregnant: boolean | null
   personal_family_history: string | null
-  oral_hygiene: unknown
+  oral_hygiene: OralHygieneData | null
   periodontal_disease: string | null
   fluorosis: string | null
   malocclusion: string | null
@@ -128,34 +120,41 @@ interface DentalRecordData {
   treatment: string | null
 }
 
-function mapToDentalRecord(data: unknown): DentalRecordData | null {
+function mapToDentalRecord(data: DentalRecordRow | null): DentalRecordData | null {
   if (!data) return null
-  const d = data as Record<string, unknown>
   return {
-    id: String(d.id || ''),
-    patient_id: String(d.patient_id || ''),
-    consultation_reason: String(d.consultation_reason || ''),
-    current_problem: d.current_problem ? (d.current_problem as { text: string } | string) : null,
-    diagnosis: d.diagnosis,
-    vital_signs: d.vital_signs,
-    stomatognathic_exam: d.stomatognathic_exam,
-    personal_history: d.personal_history,
-    family_history: d.family_history,
-    complementary_exams: d.complementary_exams,
-    patients: d.patients as PatientData,
-    opening_date: d.opening_date ? String(d.opening_date) : null,
-    pregnant: typeof d.pregnant === 'boolean' ? d.pregnant : null,
-    personal_family_history: d.personal_family_history ? String(d.personal_family_history) : null,
-    oral_hygiene: d.oral_hygiene,
-    periodontal_disease: d.periodontal_disease as string | null,
-    fluorosis: d.fluorosis as string | null,
-    malocclusion: d.malocclusion as string | null,
-    cpod_index: d.cpod_index as Record<string, number> | null,
-    ceod_index: d.ceod_index as Record<string, number> | null,
-    diagnostic_plan: d.diagnostic_plan ? String(d.diagnostic_plan) : null,
-    educational_plan: d.educational_plan ? String(d.educational_plan) : null,
-    therapeutic_plan: d.therapeutic_plan ? String(d.therapeutic_plan) : null,
-    treatment: d.treatment ? String(d.treatment) : null,
+    id: data.id,
+    patient_id: data.patient_id,
+    consultation_reason: data.consultation_reason || '',
+    current_problem: data.current_problem
+      ? (typeof data.current_problem === 'string'
+          ? data.current_problem
+          : { text: data.current_problem.text || '' })
+      : null,
+    diagnosis: data.diagnosis || null,
+    vital_signs: data.vital_signs || null,
+    stomatognathic_exam: data.stomatognathic_exam || null,
+    personal_history: data.personal_history as Record<string, boolean | string> | null,
+    family_history: data.family_history as Record<string, boolean | string> | null,
+    complementary_exams: data.complementary_exams as { hematology?: string; blood_chemistry?: string; xray?: string; other?: string } | null,
+    patients: data.patients as PatientData,
+    opening_date: data.opening_date,
+    pregnant: data.pregnant ?? null,
+    personal_family_history: data.personal_family_history || null,
+    oral_hygiene: data.oral_hygiene || null,
+    periodontal_disease: data.periodontal_disease || null,
+    fluorosis: data.fluorosis || null,
+    malocclusion: data.malocclusion
+      ? (typeof data.malocclusion === 'string'
+          ? data.malocclusion
+          : JSON.stringify(data.malocclusion))
+      : null,
+    cpod_index: data.cpod_index as Record<string, number> | null,
+    ceod_index: data.ceod_index as Record<string, number> | null,
+    diagnostic_plan: data.diagnostic_plan || null,
+    educational_plan: data.educational_plan || null,
+    therapeutic_plan: data.therapeutic_plan || null,
+    treatment: data.treatment ? (typeof data.treatment === 'string' ? data.treatment : data.treatment.text || '') : null,
   }
 }
 
@@ -171,12 +170,12 @@ export default async function Form033DetailPage({ params }: Props) {
 
   const patient = record.patients
 
-  const vitalSigns = record.vital_signs as Record<string, string | number> | null
-  const stomatognathic = record.stomatognathic_exam as StomatognathicData | null
-  const personalHistory = record.personal_history as Record<string, boolean | string> | null
-  const familyHistory = record.family_history as Record<string, boolean | string> | null
-  const complementaryExams = record.complementary_exams as { hematology?: string; blood_chemistry?: string; xray?: string; other?: string } | null
-  const diagnosis = record.diagnosis as DiagnosisData | null
+  const vitalSigns = record.vital_signs
+  const stomatognathic = record.stomatognathic_exam
+  const personalHistory = record.personal_history
+  const familyHistory = record.family_history
+  const complementaryExams = record.complementary_exams
+  const diagnosis = record.diagnosis
 
   const [prescriptionsData, teethData, sessionsData] = await Promise.all([
     getPrescriptions(slug, id),
@@ -206,13 +205,23 @@ export default async function Form033DetailPage({ params }: Props) {
         </div>
 
         <div className="hidden md:flex gap-3">
+          {prescriptions.length > 0 && (
+            <Link
+              href={`/${slug}/odontology/form-033/${id}/print?type=prescription`}
+              target="_blank"
+              className="btn btn-ghost btn-sm rounded-xl font-bold border-gray-200"
+            >
+              <Printer className="w-4 h-4" />
+              Imprimir Receta
+            </Link>
+          )}
           <Link
             href={`/${slug}/odontology/form-033/${id}/print`}
             target="_blank"
             className="btn btn-ghost btn-sm rounded-xl font-bold border-gray-200"
           >
             <Printer className="w-4 h-4" />
-            Imprimir
+            Imprimir Ficha
           </Link>
           <Link
             href={`/${slug}/odontology/form-033/${id}/edit`}
@@ -226,7 +235,7 @@ export default async function Form033DetailPage({ params }: Props) {
 
       {/* Tarjeta de Paciente Rápida */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mx-4 md:mx-0">
-        <PatientMiniCard icon={User} label="Paciente" value={`${patient?.first_name} ${patient?.last_name}`} />
+        <PatientMiniCard icon={User} label="Paciente" value={`${patient?.first_name ?? ''} ${patient?.last_name ?? ''}`.trim() || '—'} />
         <PatientMiniCard icon={CreditCard} label="Cédula" value={patient?.cedula || '—'} />
         <PatientMiniCard icon={Calendar} label="Apertura" value={record.opening_date ? new Date(record.opening_date).toLocaleDateString('es-EC') : '—'} />
       </div>
@@ -351,10 +360,20 @@ export default async function Form033DetailPage({ params }: Props) {
       {prescriptions.length > 0 && (
         <div className="card bg-white border border-gray-100 shadow-sm mx-4 md:mx-0 rounded-3xl">
           <div className="card-body p-5 md:p-8">
-            <h3 className="text-xl font-black text-gray-900 flex items-center gap-3 mb-6">
-              <FileText className="w-6 h-6 text-blue-600" />
-              Receta Médica
-            </h3>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-black text-gray-900 flex items-center gap-3">
+                <FileText className="w-6 h-6 text-blue-600" />
+                Receta Médica
+              </h3>
+              <Link
+                href={`/${slug}/odontology/form-033/${id}/print?type=prescription`}
+                target="_blank"
+                className="btn btn-ghost btn-sm rounded-xl font-bold border-gray-200"
+              >
+                <Printer className="w-4 h-4" />
+                Imprimir Receta
+              </Link>
+            </div>
             <div className="space-y-4">
               {prescriptions.map((rx) => (
                 <div key={rx.id} className="rounded-2xl border border-gray-100 bg-gray-50/50 p-5 group hover:border-blue-200 transition-all">
@@ -424,13 +443,32 @@ export default async function Form033DetailPage({ params }: Props) {
 
       {/* Action Bar para Móvil (Sticky) */}
       <div className="fixed bottom-6 left-4 right-4 md:hidden z-30 flex gap-3">
-        <Link
-          href={`/${slug}/odontology/form-033/${id}/print`}
-          className="flex-1 btn bg-white border-gray-200 rounded-2xl h-14 font-black shadow-xl"
-        >
-          <Printer className="w-5 h-5" />
-          IMPRIMIR
-        </Link>
+        {prescriptions.length > 0 ? (
+          <>
+            <Link
+              href={`/${slug}/odontology/form-033/${id}/print?type=prescription`}
+              className="flex-1 btn bg-white border-gray-200 rounded-2xl h-14 font-black shadow-xl"
+            >
+              <Printer className="w-5 h-5 text-blue-600" />
+              RECETA
+            </Link>
+            <Link
+              href={`/${slug}/odontology/form-033/${id}/print`}
+              className="flex-1 btn bg-white border-gray-200 rounded-2xl h-14 font-black shadow-xl"
+            >
+              <Printer className="w-5 h-5" />
+              FICHA
+            </Link>
+          </>
+        ) : (
+          <Link
+            href={`/${slug}/odontology/form-033/${id}/print`}
+            className="flex-1 btn bg-white border-gray-200 rounded-2xl h-14 font-black shadow-xl"
+          >
+            <Printer className="w-5 h-5" />
+            IMPRIMIR
+          </Link>
+        )}
         <Link
           href={`/${slug}/odontology/form-033/${id}/edit`}
           className="flex-1 btn btn-primary rounded-2xl h-14 font-black shadow-xl shadow-primary/30"
@@ -504,7 +542,7 @@ function DiagnosisSection({ content }: { content: DiagnosisData | null }) {
   )
 }
 
-function VitalSignsView({ content }: { content: Record<string, string | number> | null }) {
+function VitalSignsView({ content }: { content: VitalSignsData | null }) {
   if (!content) return null
 
   const items = [
@@ -512,7 +550,7 @@ function VitalSignsView({ content }: { content: Record<string, string | number> 
     { label: 'FC', val: content.heart_rate, unit: 'lpm' },
     { label: 'FR', val: content.respiratory_rate, unit: 'rpm' },
     { label: 'Temp', val: content.temperature, unit: '°C' },
-    { label: 'SpO2', val: content.spo2 || content.oxygen_saturation, unit: '%' },
+    { label: 'SpO2', val: content.spo2, unit: '%' },
     { label: 'Peso', val: content.weight, unit: 'kg' },
     { label: 'Talla', val: content.height, unit: 'cm' },
     { label: 'IMC', val: content.bmi, unit: '' },
