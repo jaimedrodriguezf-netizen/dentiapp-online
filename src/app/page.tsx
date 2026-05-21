@@ -381,15 +381,42 @@ function StatsSection() {
 }
 
 // Pricing section
-function PricingSection() {
+export function PricingSection() {
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annually'>('monthly')
+
+  // Precios editables persistidos en localStorage, con fallbacks a los valores por defecto
+  const [prices, setPrices] = useState({
+    free: 0,
+    standard: 29,
+    standardAnnual: 23,
+    business: 79,
+    businessAnnual: 63
+  })
+
+  // Cargar precios de localStorage en el montaje
+  useEffect(() => {
+    const fPrice = localStorage.getItem('pricing_free')
+    const sPrice = localStorage.getItem('pricing_standard')
+    const sPriceAnnual = localStorage.getItem('pricing_standard_annual')
+    const bPrice = localStorage.getItem('pricing_business')
+    const bPriceAnnual = localStorage.getItem('pricing_business_annual')
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPrices({
+      free: fPrice !== null ? Number(fPrice) : 0,
+      standard: sPrice !== null ? Number(sPrice) : 29,
+      standardAnnual: sPriceAnnual !== null ? Number(sPriceAnnual) : 23,
+      business: bPrice !== null ? Number(bPrice) : 79,
+      businessAnnual: bPriceAnnual !== null ? Number(bPriceAnnual) : 63
+    })
+  }, [])
 
   const plans = [
     {
       id: 'free',
       name: 'Plan Gratis',
       description: 'Ideal para profesionales independientes o consultorios pequeños que recién empiezan.',
-      price: { monthly: 0, annually: 0 },
+      price: { monthly: prices.free, annually: prices.free },
       features: [
         { text: 'Admisión y citas básicas', included: true },
         { text: 'Fichas de pacientes (hasta 50)', included: true },
@@ -406,7 +433,7 @@ function PricingSection() {
       id: 'standard',
       name: 'Plan Standard',
       description: 'Para consultorios en crecimiento que necesitan gestión ilimitada de pacientes.',
-      price: { monthly: 29, annually: 23 },
+      price: { monthly: prices.standard, annually: prices.standardAnnual },
       features: [
         { text: 'Todo lo del Plan Gratis', included: true },
         { text: 'Fichas de pacientes ilimitadas', included: true },
@@ -424,7 +451,7 @@ function PricingSection() {
       id: 'business',
       name: 'Plan Business',
       description: 'Para centros médicos y clínicas completas con personal multidisciplinario.',
-      price: { monthly: 79, annually: 63 },
+      price: { monthly: prices.business, annually: prices.businessAnnual },
       features: [
         { text: 'Todo lo del Plan Standard', included: true },
         { text: 'Gestión de equipo y roles ilimitados', included: true },
@@ -438,6 +465,7 @@ function PricingSection() {
       buttonClass: 'btn-outline border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white',
     },
   ]
+
 
   return (
     <section id="pricing" className="py-24 bg-white relative overflow-hidden">

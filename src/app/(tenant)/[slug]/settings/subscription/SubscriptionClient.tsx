@@ -30,36 +30,56 @@ export default function SubscriptionClient({ slug, clinicName, currentPlan, role
   const [prices, setPrices] = useState({
     free: 0,
     standard: 29,
-    business: 79
+    standardAnnual: 23,
+    business: 79,
+    businessAnnual: 63
   })
 
   const [editPrices, setEditPrices] = useState({
     free: 0,
     standard: 29,
-    business: 79
+    standardAnnual: 23,
+    business: 79,
+    businessAnnual: 63
   })
+
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annually'>('monthly')
+  const [activeBillingPeriod, setActiveBillingPeriod] = useState<'monthly' | 'annually'>('monthly')
 
   // Cargar precios de localStorage en el montaje
   useEffect(() => {
     const fPrice = localStorage.getItem('pricing_free')
     const sPrice = localStorage.getItem('pricing_standard')
+    const sPriceAnnual = localStorage.getItem('pricing_standard_annual')
     const bPrice = localStorage.getItem('pricing_business')
+    const bPriceAnnual = localStorage.getItem('pricing_business_annual')
+
+    const storedPeriod = localStorage.getItem(`billing_period_${slug}`)
 
     const loadedPrices = {
       free: fPrice !== null ? Number(fPrice) : 0,
       standard: sPrice !== null ? Number(sPrice) : 29,
-      business: bPrice !== null ? Number(bPrice) : 79
+      standardAnnual: sPriceAnnual !== null ? Number(sPriceAnnual) : 23,
+      business: bPrice !== null ? Number(bPrice) : 79,
+      businessAnnual: bPriceAnnual !== null ? Number(bPriceAnnual) : 63
     }
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPrices(loadedPrices)
     setEditPrices(loadedPrices)
-  }, [])
+
+    if (storedPeriod === 'annually' || storedPeriod === 'monthly') {
+      setActiveBillingPeriod(storedPeriod)
+      setBillingPeriod(storedPeriod)
+    }
+  }, [slug])
 
   const savePricesToLocal = () => {
     localStorage.setItem('pricing_free', String(editPrices.free))
     localStorage.setItem('pricing_standard', String(editPrices.standard))
+    localStorage.setItem('pricing_standard_annual', String(editPrices.standardAnnual))
     localStorage.setItem('pricing_business', String(editPrices.business))
+    localStorage.setItem('pricing_business_annual', String(editPrices.businessAnnual))
     
     setPrices(editPrices)
     setSuccessMsg('¡Tarifas de suscripción actualizadas exitosamente en el panel!')
@@ -70,8 +90,9 @@ export default function SubscriptionClient({ slug, clinicName, currentPlan, role
     }, 4000)
   }
 
-  const handlePlanChange = async (targetPlan: 'free' | 'standard' | 'business') => {
-    if (targetPlan === plan) return
+  const handlePlanChange = async (targetPlan: 'free' | 'standard' | 'business', period: 'monthly' | 'annually') => {
+    const isCurrent = targetPlan === plan && period === activeBillingPeriod
+    if (isCurrent) return
     
     setLoading(true)
     setError(null)
@@ -83,9 +104,12 @@ export default function SubscriptionClient({ slug, clinicName, currentPlan, role
         setError(res.error)
       } else {
         setPlan(targetPlan)
+        localStorage.setItem(`billing_period_${slug}`, period)
+        setActiveBillingPeriod(period)
+        setBillingPeriod(period)
         setSuccessMsg(`¡Tu suscripción se actualizó con éxito al Plan ${
           targetPlan === 'business' ? 'Business' : targetPlan === 'standard' ? 'Standard' : 'Gratis'
-        }!`)
+        } (${period === 'annually' ? 'Anual' : 'Mensual'})!`)
       }
     } catch (err) {
       setError('Ocurrió un error inesperado al actualizar el plan.')
@@ -157,12 +181,12 @@ export default function SubscriptionClient({ slug, clinicName, currentPlan, role
             </div>
             <div>
               <h3 className="text-lg font-bold text-gray-900">Panel de Administración de Tarifas</h3>
-              <p className="text-xs text-gray-500">Como administrador supremo, podés configurar interactivamente el valor mensual de cada plan en el frontend.</p>
+              <p className="text-xs text-gray-500">Como administrador supremo, podés configurar el valor de cada plan.</p>
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Plan Gratis ($/mes)</label>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Gratis ($/mes)</label>
               <input
                 type="number"
                 min="0"
@@ -172,7 +196,7 @@ export default function SubscriptionClient({ slug, clinicName, currentPlan, role
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Plan Standard ($/mes)</label>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Standard ($/mes)</label>
               <input
                 type="number"
                 min="0"
@@ -182,12 +206,32 @@ export default function SubscriptionClient({ slug, clinicName, currentPlan, role
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Plan Business ($/mes)</label>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Standard Anual ($/mes)</label>
+              <input
+                type="number"
+                min="0"
+                value={editPrices.standardAnnual}
+                onChange={(e) => setEditPrices({ ...editPrices, standardAnnual: Math.max(0, Number(e.target.value)) })}
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-gray-900 focus:border-indigo-500 focus:outline-none font-bold"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Business ($/mes)</label>
               <input
                 type="number"
                 min="0"
                 value={editPrices.business}
                 onChange={(e) => setEditPrices({ ...editPrices, business: Math.max(0, Number(e.target.value)) })}
+                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-gray-900 focus:border-indigo-500 focus:outline-none font-bold"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Business Anual ($/mes)</label>
+              <input
+                type="number"
+                min="0"
+                value={editPrices.businessAnnual}
+                onChange={(e) => setEditPrices({ ...editPrices, businessAnnual: Math.max(0, Number(e.target.value)) })}
                 className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-gray-900 focus:border-indigo-500 focus:outline-none font-bold"
               />
             </div>
@@ -200,6 +244,28 @@ export default function SubscriptionClient({ slug, clinicName, currentPlan, role
           </button>
         </div>
       )}
+
+      {/* Selector de Período de Facturación */}
+      <div className="flex items-center justify-center gap-4 max-w-5xl mx-auto pt-4">
+        <span className={`text-sm font-semibold ${billingPeriod === 'monthly' ? 'text-gray-900' : 'text-gray-500'}`}>
+          Facturación Mensual
+        </span>
+        <button
+          onClick={() => setBillingPeriod(billingPeriod === 'monthly' ? 'annually' : 'monthly')}
+          className="w-14 h-8 bg-blue-100 hover:bg-blue-200 rounded-full p-1 transition-colors duration-200 focus:outline-none relative"
+          aria-label="Alternar período de facturación"
+        >
+          <div
+            className={`w-6 h-6 bg-blue-600 rounded-full transition-transform duration-200 ${
+              billingPeriod === 'monthly' ? 'translate-x-0' : 'translate-x-6'
+            }`}
+          />
+        </button>
+        <span className={`text-sm font-semibold flex items-center gap-1.5 ${billingPeriod === 'annually' ? 'text-gray-900' : 'text-gray-500'}`}>
+          Facturación Anual
+          <span className="badge badge-success text-white font-bold text-xs py-1 px-2">Ahorrá 20%</span>
+        </span>
+      </div>
 
       {/* Comparison Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-5xl mx-auto pt-4 items-stretch">
@@ -266,7 +332,7 @@ export default function SubscriptionClient({ slug, clinicName, currentPlan, role
               </button>
             ) : (
               <button 
-                onClick={() => handlePlanChange('free')}
+                onClick={() => handlePlanChange('free', 'monthly')}
                 disabled={loading}
                 className="w-full h-14 bg-white border-2 border-gray-200 hover:border-green-500 hover:text-green-600 text-gray-700 font-black rounded-2xl transition-all tracking-wide uppercase text-sm flex items-center justify-center gap-2 shadow-sm"
               >
@@ -278,11 +344,11 @@ export default function SubscriptionClient({ slug, clinicName, currentPlan, role
 
         {/* Standard Plan Card */}
         <div className={`relative overflow-hidden bg-white border rounded-[36px] p-8 flex flex-col justify-between transition-all duration-300 shadow-md ${
-          plan === 'standard' 
+          plan === 'standard' && activeBillingPeriod === billingPeriod
             ? 'border-blue-500 ring-4 ring-blue-500/10' 
             : 'border-gray-200 hover:border-gray-300 hover:shadow-xl'
         }`}>
-          {plan === 'standard' && (
+          {plan === 'standard' && activeBillingPeriod === billingPeriod && (
             <div className="absolute top-0 right-0 bg-blue-500 text-white font-black text-[10px] tracking-widest uppercase px-6 py-2 rounded-bl-3xl shadow-sm">
               Plan Activo
             </div>
@@ -299,9 +365,16 @@ export default function SubscriptionClient({ slug, clinicName, currentPlan, role
               </div>
             </div>
 
-            <div className="flex items-baseline gap-1 my-6">
-              <span className="text-5xl font-black text-gray-900">${prices.standard}</span>
+            <div className="flex items-baseline gap-1 my-6 flex-wrap">
+              <span className="text-5xl font-black text-gray-900">
+                ${billingPeriod === 'monthly' ? prices.standard : prices.standardAnnual}
+              </span>
               <span className="text-gray-500 font-bold text-lg">/mes</span>
+              {billingPeriod === 'annually' && (
+                <span className="text-[10px] text-green-600 font-black bg-green-50 px-2 py-0.5 rounded-md uppercase tracking-wider block w-full mt-1">
+                  Facturado anualmente
+                </span>
+              )}
             </div>
 
             <p className="text-gray-500 text-sm font-medium mb-8 min-h-[60px]">
@@ -329,7 +402,7 @@ export default function SubscriptionClient({ slug, clinicName, currentPlan, role
           </div>
 
           <div className="mt-8 pt-6 border-t border-gray-100">
-            {plan === 'standard' ? (
+            {plan === 'standard' && activeBillingPeriod === billingPeriod ? (
               <button 
                 disabled
                 className="w-full h-14 bg-gray-100 text-gray-400 font-black rounded-2xl tracking-wide uppercase text-sm border-2 border-dashed border-gray-200 cursor-not-allowed"
@@ -338,11 +411,15 @@ export default function SubscriptionClient({ slug, clinicName, currentPlan, role
               </button>
             ) : (
               <button 
-                onClick={() => handlePlanChange('standard')}
+                onClick={() => handlePlanChange('standard', billingPeriod)}
                 disabled={loading}
-                className="w-full h-14 bg-white border-2 border-gray-200 hover:border-blue-500 hover:text-blue-600 text-gray-700 font-black rounded-2xl transition-all tracking-wide uppercase text-sm flex items-center justify-center gap-2 shadow-sm"
+                className="w-full h-14 bg-white border-2 border-gray-200 hover:border-blue-500 hover:text-green-600 text-gray-700 font-black rounded-2xl transition-all tracking-wide uppercase text-sm flex items-center justify-center gap-2 shadow-sm"
               >
-                {loading ? <span className="loading loading-spinner loading-sm" /> : 'Activar Standard'}
+                {loading ? <span className="loading loading-spinner loading-sm" /> : (
+                  plan === 'standard'
+                    ? `Cambiar a Anual`
+                    : 'Activar Standard'
+                )}
               </button>
             )}
           </div>
@@ -350,11 +427,11 @@ export default function SubscriptionClient({ slug, clinicName, currentPlan, role
 
         {/* Business Plan Card */}
         <div className={`relative overflow-hidden bg-gradient-to-b from-gray-950 to-gray-900 border rounded-[36px] p-8 flex flex-col justify-between transition-all duration-300 shadow-xl ${
-          plan === 'business' 
+          plan === 'business' && activeBillingPeriod === billingPeriod
             ? 'border-purple-500 ring-4 ring-purple-500/20' 
             : 'border-gray-800 hover:border-gray-700 hover:shadow-2xl'
         }`}>
-          {plan === 'business' && (
+          {plan === 'business' && activeBillingPeriod === billingPeriod && (
             <div className="absolute top-0 right-0 bg-purple-600 text-white font-black text-[10px] tracking-widest uppercase px-6 py-2 rounded-bl-3xl shadow-sm flex items-center gap-1.5">
               <Crown className="w-3.5 h-3.5 fill-current" /> Plan Activo
             </div>
@@ -374,9 +451,16 @@ export default function SubscriptionClient({ slug, clinicName, currentPlan, role
               </div>
             </div>
 
-            <div className="flex items-baseline gap-1 my-6">
-              <span className="text-5xl font-black text-white">${prices.business}</span>
+            <div className="flex items-baseline gap-1 my-6 flex-wrap">
+              <span className="text-5xl font-black text-white">
+                ${billingPeriod === 'monthly' ? prices.business : prices.businessAnnual}
+              </span>
               <span className="text-purple-300/60 font-bold text-lg">/mes</span>
+              {billingPeriod === 'annually' && (
+                <span className="text-[10px] text-purple-300 font-black bg-purple-500/20 px-2 py-0.5 rounded-md uppercase tracking-wider block w-full mt-1">
+                  Facturado anualmente
+                </span>
+              )}
             </div>
 
             <p className="text-gray-400 text-sm font-medium mb-8 min-h-[60px]">
@@ -404,7 +488,7 @@ export default function SubscriptionClient({ slug, clinicName, currentPlan, role
           </div>
 
           <div className="mt-8 pt-6 border-t border-white/10">
-            {plan === 'business' ? (
+            {plan === 'business' && activeBillingPeriod === billingPeriod ? (
               <button 
                 disabled
                 className="w-full h-14 bg-purple-950/20 text-purple-300/40 font-black rounded-2xl tracking-wide uppercase text-sm border-2 border-dashed border-purple-500/20 cursor-not-allowed"
@@ -413,15 +497,19 @@ export default function SubscriptionClient({ slug, clinicName, currentPlan, role
               </button>
             ) : (
               <button 
-                onClick={() => handlePlanChange('business')}
+                onClick={() => handlePlanChange('business', billingPeriod)}
                 disabled={loading}
                 className="w-full h-14 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 active:scale-95 text-white font-black rounded-2xl transition-all tracking-wide uppercase text-sm flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20"
               >
                 {loading ? <span className="loading loading-spinner loading-sm" /> : (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    MEJORAR A BUSINESS
-                  </>
+                  plan === 'business'
+                    ? `Cambiar a Anual`
+                    : (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        MEJORAR A BUSINESS
+                      </>
+                    )
                 )}
               </button>
             )}
