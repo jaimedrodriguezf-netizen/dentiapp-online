@@ -1,6 +1,6 @@
 'use client'
 
-import { motion, useScroll, useTransform, useInView } from 'framer-motion'
+import { motion, useInView } from 'framer-motion'
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import {
@@ -12,8 +12,8 @@ import {
   ArrowRight,
   Sparkles,
   Shield,
-  Clock,
   Stethoscope,
+  X,
 } from 'lucide-react'
 import { Tooth } from '@/components/ui/ToothIcon'
 
@@ -380,6 +380,174 @@ function StatsSection() {
   )
 }
 
+// Pricing section
+function PricingSection() {
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annually'>('monthly')
+
+  const plans = [
+    {
+      id: 'free',
+      name: 'Plan Gratis',
+      description: 'Ideal para profesionales independientes o consultorios pequeños que recién empiezan.',
+      price: { monthly: 0, annually: 0 },
+      features: [
+        { text: 'Admisión y citas básicas', included: true },
+        { text: 'Fichas de pacientes (hasta 50)', included: true },
+        { text: 'Odontograma básico', included: true },
+        { text: 'Soporte por comunidad', included: true },
+        { text: 'Gestión de equipo y roles', included: false },
+        { text: 'Enfermería avanzada', included: false },
+      ],
+      popular: false,
+      buttonText: 'Empezar Gratis',
+      buttonClass: 'btn-outline border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white',
+    },
+    {
+      id: 'standard',
+      name: 'Plan Standard',
+      description: 'Para consultorios en crecimiento que necesitan gestión ilimitada de pacientes.',
+      price: { monthly: 29, annually: 23 },
+      features: [
+        { text: 'Todo lo del Plan Gratis', included: true },
+        { text: 'Fichas de pacientes ilimitadas', included: true },
+        { text: 'Odontograma completo e interactivo', included: true },
+        { text: 'Formulario oficial MSP 033', included: true },
+        { text: 'Soporte técnico por email', included: true },
+        { text: 'Gestión de equipo y roles', included: false },
+        { text: 'Enfermería avanzada', included: false },
+      ],
+      popular: true,
+      buttonText: 'Adquirir Standard',
+      buttonClass: 'bg-blue-600 hover:bg-blue-700 text-white border-none',
+    },
+    {
+      id: 'business',
+      name: 'Plan Business',
+      description: 'Para centros médicos y clínicas completas con personal multidisciplinario.',
+      price: { monthly: 79, annually: 63 },
+      features: [
+        { text: 'Todo lo del Plan Standard', included: true },
+        { text: 'Gestión de equipo y roles ilimitados', included: true },
+        { text: 'Módulo de enfermería avanzada', included: true },
+        { text: 'Clínicas multi-sucursales', included: true },
+        { text: 'Soporte prioritario 24/7', included: true },
+        { text: 'Capacitación del equipo', included: true },
+      ],
+      popular: false,
+      buttonText: 'Adquirir Business',
+      buttonClass: 'btn-outline border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white',
+    },
+  ]
+
+  return (
+    <section id="pricing" className="py-24 bg-white relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full max-w-7xl pointer-events-none opacity-5">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-purple-400 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-400 rounded-full blur-3xl" />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <ScrollReveal>
+          <div className="text-center mb-16">
+            <span className="inline-block px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold mb-4">
+              🏷️ Tarifas Transparentes
+            </span>
+            <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
+              Planes simples a tu medida
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
+              Elegí el plan que mejor se adapte a tus necesidades. Podés cambiar de plan en cualquier momento.
+            </p>
+
+            {/* Billing Toggle */}
+            <div className="flex items-center justify-center gap-4">
+              <span className={`text-sm font-semibold ${billingPeriod === 'monthly' ? 'text-gray-900' : 'text-gray-500'}`}>
+                Facturación Mensual
+              </span>
+              <button
+                onClick={() => setBillingPeriod(billingPeriod === 'monthly' ? 'annually' : 'monthly')}
+                className="w-14 h-8 bg-blue-100 hover:bg-blue-200 rounded-full p-1 transition-colors duration-200 focus:outline-none relative"
+                aria-label="Alternar período de facturación"
+              >
+                <motion.div
+                  className="w-6 h-6 bg-blue-600 rounded-full"
+                  animate={{ x: billingPeriod === 'monthly' ? 0 : 24 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                />
+              </button>
+              <span className={`text-sm font-semibold flex items-center gap-1.5 ${billingPeriod === 'annually' ? 'text-gray-900' : 'text-gray-500'}`}>
+                Facturación Anual
+                <span className="badge badge-success text-white font-bold text-xs py-1 px-2">Ahorrá 20%</span>
+              </span>
+            </div>
+          </div>
+        </ScrollReveal>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+          {plans.map((plan, index) => (
+            <ScrollReveal key={plan.id} delay={index * 0.1}>
+              <motion.div
+                className={`flex flex-col h-full rounded-3xl p-8 bg-white border transition-all duration-300 relative ${
+                  plan.popular
+                    ? 'border-blue-600 shadow-xl scale-100 lg:scale-105 z-10'
+                    : 'border-gray-200 shadow-md hover:shadow-xl'
+                }`}
+                whileHover={{ y: -8 }}
+              >
+                {plan.popular && (
+                  <span className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold uppercase tracking-wider py-1.5 px-4 rounded-full shadow-md">
+                    Recomendado
+                  </span>
+                )}
+
+                <div className="mb-6">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
+                  <p className="text-gray-500 text-sm min-h-[48px]">{plan.description}</p>
+                </div>
+
+                <div className="flex items-baseline gap-1 mb-8">
+                  <span className="text-5xl font-extrabold text-gray-900">
+                    ${billingPeriod === 'monthly' ? plan.price.monthly : plan.price.annually}
+                  </span>
+                  <span className="text-gray-500 text-sm">/ mes</span>
+                  {billingPeriod === 'annually' && plan.price.monthly > 0 && (
+                    <span className="text-xs text-green-600 font-semibold ml-2">
+                      (Facturado anualmente)
+                    </span>
+                  )}
+                </div>
+
+                <ul className="space-y-4 mb-8 flex-grow">
+                  {plan.features.map((feature, idx) => (
+                    <li key={idx} className="flex items-start gap-3 text-sm">
+                      {feature.included ? (
+                        <Check className="w-5 h-5 text-green-500 shrink-0 mt-0.5" />
+                      ) : (
+                        <X className="w-5 h-5 text-gray-300 shrink-0 mt-0.5" />
+                      )}
+                      <span className={feature.included ? 'text-gray-700' : 'text-gray-400 line-through'}>
+                        {feature.text}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Link
+                  href={`/register?plan=${plan.id}`}
+                  className={`btn btn-block py-3 rounded-xl font-semibold transition-all duration-200 ${plan.buttonClass}`}
+                >
+                  {plan.buttonText}
+                </Link>
+              </motion.div>
+            </ScrollReveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 // CTA section
 function CTASection() {
   return (
@@ -423,10 +591,10 @@ function CTASection() {
                   <Check className="w-4 h-4" /> Sin tarjeta de crédito
                 </span>
                 <span className="flex items-center gap-2">
-                  <Check className="w-4 h-4" /> 30 días gratis
+                  <Check className="w-4 h-4" /> Plan Gratis disponible
                 </span>
                 <span className="flex items-center gap-2">
-                  <Check className="w-4 h-4" /> Hasta 50 pacientes
+                  <Check className="w-4 h-4" /> Soporte continuo
                 </span>
               </div>
             </div>
@@ -493,6 +661,7 @@ export default function HomePage() {
       <HeroSection />
       <FeaturesSection />
       <StatsSection />
+      <PricingSection />
       <CTASection />
       <Footer />
     </main>

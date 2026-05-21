@@ -56,7 +56,7 @@ export default function OnboardingPage() {
       .insert({
         tenant_id: tenant.id,
         user_id: user.id,
-        role: 'ceo',
+        role: 'admin',
       })
 
     if (memberError) {

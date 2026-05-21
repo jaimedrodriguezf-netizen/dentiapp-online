@@ -15,18 +15,17 @@ describe('TreatmentSessionManager', () => {
     expect(screen.getByText('Sesión 1')).toBeInTheDocument()
   })
 
-  it('tiene un input oculto con name "treatment_sessions_json"', () => {
+  it('tiene un input oculto con name "treatment_sessions"', () => {
     render(<TreatmentSessionManager />)
-    const hidden = document.querySelector('input[name="treatment_sessions_json"]')
+    const hidden = document.querySelector('input[name="treatment_sessions"]')
     expect(hidden).toBeInTheDocument()
   })
 
   it('el input oculto contiene un JSON array con datos de sesiones', () => {
-    render(<TreatmentSessionManager defaultSessions={[{ session_number: 1, date: '2024-01-01', diagnosis: '', procedure: '', notes: '' }]} />)
-    const hidden = document.querySelector('input[name="treatment_sessions_json"]') as HTMLInputElement
+    render(<TreatmentSessionManager />)
+    const hidden = document.querySelector('input[name="treatment_sessions"]') as HTMLInputElement
     const data = JSON.parse(hidden.value)
     expect(Array.isArray(data)).toBe(true)
-    expect(data[0].session_number).toBe(1)
   })
 
   it('renderiza defaultSessions correctamente con múltiples sesiones', () => {

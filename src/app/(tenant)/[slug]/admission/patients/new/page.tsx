@@ -10,7 +10,7 @@ export default async function NewPatientPage({ params }: Props) {
   const { slug } = await params
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-24 md:pb-12">
+    <div className="w-full space-y-6 pb-24 md:pb-12">
       {/* Header Adaptable */}
       <div className="flex items-center justify-between bg-base-100 p-4 md:p-0 rounded-2xl md:bg-transparent shadow-sm md:shadow-none sticky top-0 md:relative z-20 mx-4 md:mx-0">
         <div className="flex items-center gap-3 md:gap-4">

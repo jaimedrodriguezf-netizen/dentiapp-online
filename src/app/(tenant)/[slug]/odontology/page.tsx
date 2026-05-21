@@ -28,7 +28,7 @@ export default async function OdontologyDashboard({ params }: Props) {
     .eq('tenant_id', membership.tenant_id)
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="w-full space-y-8">
       <div>
         <h2 className="text-2xl font-bold text-gray-900">Odontología</h2>
         <p className="text-gray-500 mt-1">Historias clínicas, Formulario 033 y odontograma</p>

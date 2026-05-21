@@ -91,6 +91,8 @@ export default function Form033Wizard({
   defaultPersonalHistory,
   defaultFamilyHistory,
   defaultVitalSigns,
+  patientId,
+  patientName,
 }: Props) {
   const [saving, setSaving] = useState(false)
   const [activeSection, setActiveSection] = useState('patient')
@@ -200,9 +202,22 @@ export default function Form033Wizard({
       </aside>
 
       {/* Main Unified Form */}
-      <div className="flex-1 min-w-0 space-y-12">
+      <div className="flex-1 min-w-0 space-y-12 pb-24 lg:pb-0">
         <form ref={formRef} className="space-y-12" onSubmit={handleFormSubmission}>
           
+          {/* Patient banner (when creating from patient profile) */}
+          {patientName && (
+            <div className="flex items-center gap-3 p-4 bg-blue-50/50 rounded-2xl border border-blue-100">
+              <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-black text-sm">
+                {patientName.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <p className="font-black text-gray-900 text-sm">{patientName}</p>
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Formulario 033 — MSP</p>
+              </div>
+            </div>
+          )}
+
           {/* SECTION: Motivo y Enfermedad */}
           <section id="patient" className="scroll-mt-24 space-y-6">
             <SectionHeader icon={User} title="1 y 2. Motivo de Consulta y Enfermedad Actual" />
@@ -289,6 +304,18 @@ export default function Form033Wizard({
             <div className="bg-white border border-gray-100 rounded-[32px] p-6 md:p-8 shadow-sm space-y-8">
               <SubSection title="Higiene Oral Simplificada">
                 <OralHygieneFields />
+              </SubSection>
+              <SubSection title="Enfermedad periodontal">
+                <select
+                  name="periodontal_disease"
+                  defaultValue=""
+                  className="w-full rounded-xl border-2 border-gray-100 bg-gray-50/30 px-4 py-3 text-sm font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
+                >
+                  <option value="">Normal</option>
+                  <option value="leve">Leve</option>
+                  <option value="moderada">Moderada</option>
+                  <option value="severa">Severa</option>
+                </select>
               </SubSection>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <SubSection title="Fluorosis">
@@ -396,7 +423,7 @@ export default function Form033Wizard({
       </div>
 
       {/* Floating Save Button & Progress (Mobile/Global) */}
-      <div className="fixed bottom-6 right-6 flex flex-col gap-3 z-50">
+      <div className="fixed bottom-20 right-6 lg:bottom-6 flex flex-col gap-3 z-50">
         <AnimatePresence>
           {activeSection !== 'patient' && (
             <motion.button

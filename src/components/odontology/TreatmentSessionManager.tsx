@@ -64,7 +64,7 @@ export default function TreatmentSessionManager({
         {sessions.map((session, index) => (
           <div
             key={session.id || `temp-${index}-${session.session_number}`}
-            className="group relative bg-white border border-gray-100 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all animate-in fade-in slide-in-from-bottom-2"
+            className="group relative bg-white border border-gray-100 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all animate-in fade-in slide-in-from-bottom-2"
           >
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
@@ -72,7 +72,7 @@ export default function TreatmentSessionManager({
                   <span className="text-sm font-black text-gray-900">{session.session_number}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Sesión</span>
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Sesión {session.session_number}</span>
                   <input
                     type="date"
                     value={session.date}
@@ -141,7 +141,7 @@ export default function TreatmentSessionManager({
         )}
       </div>
 
-      <input type="hidden" name="treatment_sessions_json" value={JSON.stringify(sessions)} readOnly />
+      <input type="hidden" name="treatment_sessions" value={JSON.stringify(sessions)} readOnly />
     </div>
   )
 }

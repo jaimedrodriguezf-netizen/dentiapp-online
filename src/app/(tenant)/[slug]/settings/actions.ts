@@ -6,13 +6,13 @@ import { revalidatePath } from 'next/cache'
 
 interface TenantInfo {
   id: string
-  plan: 'standard' | 'business'
+  plan: 'free' | 'standard' | 'business'
 }
 
 interface UserMembership {
   id: string
   role: 'admin' | 'supervisor' | 'doctor' | 'nurse' | 'receptionist'
-  tenant_plan: 'standard' | 'business'
+  tenant_plan: 'free' | 'standard' | 'business'
 }
 
 interface TeamMember {
@@ -39,7 +39,7 @@ async function getTenantInfo(slug: string): Promise<TenantInfo | null> {
   if (!tenant) return null
   return {
     id: tenant.id,
-    plan: tenant.plan as 'standard' | 'business'
+    plan: tenant.plan as 'free' | 'standard' | 'business'
   }
 }
 
@@ -124,8 +124,8 @@ export async function updateMemberRole(slug: string, memberId: string, formData:
     return { error: 'No autorizado' }
   }
 
-  if (membership.tenant_plan === 'standard') {
-    return { error: 'El plan Standard no permite gestionar equipo. Mejore al plan Business.' }
+  if (membership.tenant_plan !== 'business') {
+    return { error: 'El plan actual no permite gestionar equipo. Mejore al plan Business.' }
   }
 
   const supabase = await createClient()
@@ -141,8 +141,8 @@ export async function removeMember(slug: string, memberId: string) {
     return { error: 'No autorizado' }
   }
 
-  if (membership.tenant_plan === 'standard') {
-    return { error: 'El plan Standard no permite gestionar equipo. Mejore al plan Business.' }
+  if (membership.tenant_plan !== 'business') {
+    return { error: 'El plan actual no permite gestionar equipo. Mejore al plan Business.' }
   }
 
   const supabase = await createClient()
@@ -178,8 +178,8 @@ export async function togglePermission(slug: string, role: string, permissionKey
     return { error: 'No autorizado' }
   }
 
-  if (membership.tenant_plan === 'standard') {
-    return { error: 'El plan Standard no permite gestionar permisos. Mejore al plan Business.' }
+  if (membership.tenant_plan !== 'business') {
+    return { error: 'El plan actual no permite gestionar permisos. Mejore al plan Business.' }
   }
 
   const supabase = await createClient()
@@ -313,5 +313,32 @@ export async function rescheduleAppointment(
   if (error) return { error: error.message }
 
   revalidatePath(`/${slug}/admission/appointments`)
+  return { success: true }
+}
+
+// ============================================================
+// SUBSCRIPTION
+// ============================================================
+
+export async function updateSubscriptionPlan(slug: string, newPlan: 'free' | 'standard' | 'business') {
+  const supabase = await createClient()
+  const membership = await requireAuth(slug)
+  
+  if (!membership || membership.role !== 'admin') {
+    return { error: 'No autorizado' }
+  }
+
+  const tenant = await getTenantInfo(slug)
+  if (!tenant) return { error: 'No tienes una clínica activa' }
+
+  const { error } = await supabase
+    .from('tenants')
+    .update({ plan: newPlan })
+    .eq('id', tenant.id)
+
+  if (error) return { error: error.message }
+
+  revalidatePath(`/${slug}/settings/subscription`)
+  revalidatePath(`/${slug}/dashboard`)
   return { success: true }
 }

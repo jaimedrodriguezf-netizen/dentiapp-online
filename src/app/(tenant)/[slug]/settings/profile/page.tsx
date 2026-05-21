@@ -12,7 +12,7 @@ interface TenantData {
   id: string
   name: string
   slug: string
-  plan: 'standard' | 'business'
+  plan: 'free' | 'standard' | 'business'
   phone: string | null
   email: string | null
   address: string | null
@@ -43,7 +43,7 @@ export default async function ProfileSettingsPage({ params }: Props) {
     id: tenantRaw.id,
     name: tenantRaw.name,
     slug: tenantRaw.slug,
-    plan: (tenantRaw.plan as 'standard' | 'business') || 'standard',
+    plan: (tenantRaw.plan as 'free' | 'standard' | 'business') || 'standard',
     phone: tenantRaw.phone,
     email: tenantRaw.email,
     address: tenantRaw.address,
@@ -68,7 +68,7 @@ export default async function ProfileSettingsPage({ params }: Props) {
   const isBoss = role === 'admin' || role === 'supervisor'
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-12">
+    <div className="w-full space-y-8 pb-12">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold text-gray-900">Configuración</h2>
@@ -221,6 +221,23 @@ export default async function ProfileSettingsPage({ params }: Props) {
                 </div>
               </div>
             </Link>
+            
+            {role === 'admin' && (
+              <Link
+                href={`/${slug}/settings/subscription`}
+                className="group block p-4 bg-white border border-gray-200 rounded-2xl hover:border-yellow-500 hover:shadow-md transition-all"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-yellow-50 text-yellow-600 rounded-xl group-hover:bg-yellow-600 group-hover:text-white transition-colors">
+                    <Crown className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-gray-900 group-hover:text-yellow-600 transition-colors">Suscripción</p>
+                    <p className="text-xs text-gray-500">Planes y tarifas de tu clínica</p>
+                  </div>
+                </div>
+              </Link>
+            )}
 
             {isBoss ? (
               <>
@@ -262,9 +279,12 @@ export default async function ProfileSettingsPage({ params }: Props) {
                     <p className="text-sm text-indigo-100 mb-6 leading-relaxed">
                       Pasate al <strong>Plan Business</strong> para invitar a otros especialistas.
                     </p>
-                    <button className="w-full py-3 bg-white text-indigo-700 rounded-xl font-bold text-sm hover:bg-indigo-50 transition-colors active:scale-95">
+                    <Link
+                      href={`/${slug}/settings/subscription`}
+                      className="block w-full text-center py-3 bg-white text-indigo-700 rounded-xl font-bold text-sm hover:bg-indigo-50 transition-colors active:scale-95 shadow-sm"
+                    >
                       Mejorar Plan
-                    </button>
+                    </Link>
                   </div>
                 )}
               </>

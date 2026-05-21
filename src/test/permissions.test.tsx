@@ -37,11 +37,21 @@ describe('DashboardSidebar Permissions', () => {
     expect(screen.getByText('Permisos')).toBeDefined()
   })
 
-  it('should always show everything for CEO regardless of permissions map', () => {
+  it('should always show everything for Admin regardless of permissions map', () => {
     const permissions = { view_odontology: false, manage_team: false }
-    render(<DashboardSidebar role="ceo" tenant={mockTenant} permissions={permissions} />)
+    render(<DashboardSidebar role="admin" tenant={mockTenant} permissions={permissions} />)
     
     expect(screen.getByText('Odontología')).toBeDefined()
     expect(screen.getByText('Permisos')).toBeDefined()
+  })
+
+  it('should show Suscripción for Admin', () => {
+    render(<DashboardSidebar role="admin" tenant={mockTenant} />)
+    expect(screen.getByText('Suscripción')).toBeDefined()
+  })
+
+  it('should NOT show Suscripción for Doctor', () => {
+    render(<DashboardSidebar role="doctor" tenant={mockTenant} />)
+    expect(screen.queryByText('Suscripción')).toBeNull()
   })
 })

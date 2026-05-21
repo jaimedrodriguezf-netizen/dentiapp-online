@@ -7,9 +7,9 @@ class MockIntersectionObserver implements IntersectionObserver {
   readonly thresholds: ReadonlyArray<number> = []
 
   constructor(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     public callback: IntersectionObserverCallback,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     public options?: IntersectionObserverInit
   ) {}
 

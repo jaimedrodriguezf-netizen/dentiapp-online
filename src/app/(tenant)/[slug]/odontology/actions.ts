@@ -138,21 +138,14 @@ export async function createDentalRecord(slug: string, patientId: string, formDa
       const sessions = JSON.parse(sessionsRaw)
       if (Array.isArray(sessions) && sessions.length > 0) {
         await supabase.from('treatment_sessions').insert(
-          sessions.map((s: {
-            session_number: number
-            session_date?: string
-            diagnoses_complications?: string
-            procedures?: string
-            prescriptions?: string
-            signature?: string
-          }) => ({
+          sessions.map((s: Record<string, unknown>) => ({
             dental_record_id: record.id,
-            session_number: s.session_number,
-            session_date: s.session_date || null,
-            diagnoses_complications: s.diagnoses_complications || null,
-            procedures: s.procedures || null,
-            prescriptions: s.prescriptions || null,
-            signature: s.signature || null,
+            session_number: s.session_number as number,
+            session_date: (s.session_date || s.date || null) as string | null,
+            diagnoses_complications: (s.diagnoses_complications || s.diagnosis || null) as string | null,
+            procedures: (s.procedures || s.procedure || null) as string | null,
+            prescriptions: (s.prescriptions || null) as string | null,
+            signature: (s.signature || null) as string | null,
           }))
         )
       }

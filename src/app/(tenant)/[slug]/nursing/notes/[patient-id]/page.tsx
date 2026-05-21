@@ -21,7 +21,7 @@ export default async function NursingNotesPage({ params }: Props) {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href={`/${slug}/nursing/vital-signs`} className="flex items-center gap-1 text-gray-500 hover:text-gray-700">

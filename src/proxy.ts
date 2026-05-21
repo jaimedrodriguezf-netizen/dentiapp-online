@@ -11,7 +11,7 @@ interface TenantProxyInfo {
   id: string
   name: string
   slug: string
-  plan: 'standard' | 'business'
+  plan: 'free' | 'standard' | 'business'
 }
 
 interface MembershipProxyInfo {
@@ -21,9 +21,32 @@ interface MembershipProxyInfo {
 }
 
 export async function proxy(request: NextRequest) {
+  const url = request.nextUrl.clone()
+  const path = url.pathname
+  const pathSegments = path.split('/').filter(Boolean)
+
   let supabaseResponse = NextResponse.next({
     request,
   })
+
+  // Localized module list. Kept local because Next.js Edge runtime does not allow
+  // importing components/modules from external routes files without bundle issues.
+  const tenantModules = ['dashboard', 'admission', 'nursing', 'odontology', 'settings']
+  const isAuthRoute = path === '/login' || path === '/register'
+  const isProtectedTenantRoute =
+    pathSegments.length >= 2 &&
+    (tenantModules.includes(pathSegments[1]) || path.includes('/settings/'))
+  const requiresAuth = isAuthRoute || isProtectedTenantRoute
+
+  // Check if a Supabase auth cookie exists to determine if session refresh is needed
+  const hasAuthCookie = request.cookies.getAll().some(cookie => 
+    cookie.name.includes('auth-token') || cookie.name.startsWith('sb-')
+  )
+
+  // Early return for public routes to avoid slow Supabase API calls, unless there is an auth session to refresh
+  if (!requiresAuth && !hasAuthCookie) {
+    return supabaseResponse
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -51,14 +74,6 @@ export async function proxy(request: NextRequest) {
   // 1. Verificar Sesión
   const { data: userData } = await supabase.auth.getUser()
   const user = userData?.user
-  
-  const url = request.nextUrl.clone()
-  const path = url.pathname
-  const pathSegments = path.split('/').filter(Boolean)
-
-  if (path === '/' || path.startsWith('/api/') || path.startsWith('/_next/')) {
-    return supabaseResponse
-  }
 
   // 2. Redirecciones Inteligentes para Auth
   if (user && (path === '/login' || path === '/register')) {
@@ -70,8 +85,12 @@ export async function proxy(request: NextRequest) {
       .maybeSingle()
     
     if (membershipRaw && membershipRaw.tenants) {
-      const tenants = membershipRaw.tenants as unknown as { slug: string }
-      return NextResponse.redirect(new URL(`/${tenants.slug}/dashboard`, request.url))
+      const tenantsVal = membershipRaw.tenants
+      const firstTenant = Array.isArray(tenantsVal) ? tenantsVal[0] : tenantsVal
+      if (firstTenant && typeof firstTenant === 'object' && 'slug' in firstTenant) {
+        const slug = String((firstTenant as { slug: string }).slug || '')
+        return NextResponse.redirect(new URL(`/${slug}/dashboard`, request.url))
+      }
     }
   }
 
@@ -81,11 +100,9 @@ export async function proxy(request: NextRequest) {
     const tenantModule = pathSegments[1]
     const subPage = pathSegments[2]
 
-    const tenantModules = ['dashboard', 'admission', 'nursing', 'odontology', 'settings']
-    
     if (tenantModules.includes(tenantModule) || path.includes('/settings/')) {
       if (!user) {
-        return NextResponse.redirect(new URL(`/${slug}/login`, request.url))
+        return NextResponse.redirect(new URL(`/login`, request.url))
       }
 
       // 4. Verificar Membresía, Rol y Plan
@@ -100,11 +117,24 @@ export async function proxy(request: NextRequest) {
         return NextResponse.redirect(new URL(`/login`, request.url))
       }
 
-      // Mapping seguro sin any
+      const rawTenants = membershipRaw.tenants
+      const firstTenant = Array.isArray(rawTenants) ? rawTenants[0] : rawTenants
+      if (!firstTenant || typeof firstTenant !== 'object') {
+        return NextResponse.redirect(new URL(`/login`, request.url))
+      }
+
+      const tObj = firstTenant as { id?: string; name?: string; slug?: string; plan?: string }
+      const tenants: TenantProxyInfo = {
+        id: String(tObj.id || ''),
+        name: String(tObj.name || ''),
+        slug: String(tObj.slug || ''),
+        plan: (tObj.plan as TenantProxyInfo['plan']) || 'free'
+      }
+
       const membership: MembershipProxyInfo = {
         role: membershipRaw.role as MembershipProxyInfo['role'],
         tenant_id: membershipRaw.tenant_id,
-        tenants: membershipRaw.tenants as unknown as TenantProxyInfo
+        tenants
       }
 
       const role = membership.role
@@ -119,11 +149,10 @@ export async function proxy(request: NextRequest) {
 
       // B. RESTRICCIÓN DE CONFIGURACIÓN SENSIBLE (Permisos y Equipo)
       if (tenantModule === 'settings' && (subPage === 'permissions' || subPage === 'team')) {
-        if (role !== 'supervisor') {
+        if (plan !== 'business') {
           return NextResponse.redirect(new URL(`/${slug}/dashboard`, request.url))
         }
-
-        if (subPage === 'team' && plan === 'standard') {
+        if (role !== 'supervisor') {
           return NextResponse.redirect(new URL(`/${slug}/dashboard`, request.url))
         }
       }
@@ -143,6 +172,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 }

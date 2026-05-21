@@ -8,19 +8,36 @@ interface Props {
   params: Promise<{ slug: string }>
 }
 
+interface OperatingHour {
+  id: string
+  tenant_id: string
+  day_of_week: number
+  is_open: boolean
+  open_time: string | null
+  close_time: string | null
+  created_at: string
+  updated_at: string
+}
+
 export default async function TenantPublicPage({ params }: Props) {
   const { slug } = await params
   const supabase = await createClient()
 
-  const { data: tenant } = await supabase
+  // Consolidamos ambas consultas en una sola para evitar la latencia de dos llamadas secuenciales
+  const { data: tenantRaw } = await supabase
     .from('tenants')
-    .select('*')
+    .select('*, operating_hours(*)')
     .eq('slug', slug)
     .single()
 
-  if (!tenant) {
+  if (!tenantRaw) {
     notFound()
   }
+
+  const { operating_hours, ...tenant } = tenantRaw
+  const sortedOperatingHours = ((operating_hours as unknown as OperatingHour[]) || []).sort(
+    (a, b) => a.day_of_week - b.day_of_week
+  )
 
   const headersList = await headers()
   const host = headersList.get('host') || 'localhost:3000'
@@ -43,12 +60,13 @@ export default async function TenantPublicPage({ params }: Props) {
     whatsappLink = `https://wa.me/${clean}?text=${message}`
   }
 
-  // Fetch operating hours
-  const { data: operatingHours } = await supabase
-    .from('operating_hours')
-    .select('*')
-    .eq('tenant_id', tenant.id)
-    .order('day_of_week', { ascending: true })
-
-  return <TenantLandingClient tenant={tenant} clinicUrl={clinicUrl} qrSvg={qrSvg} whatsappLink={whatsappLink} operatingHours={operatingHours || []} />
+  return (
+    <TenantLandingClient
+      tenant={tenant}
+      clinicUrl={clinicUrl}
+      qrSvg={qrSvg}
+      whatsappLink={whatsappLink}
+      operatingHours={sortedOperatingHours}
+    />
+  )
 }

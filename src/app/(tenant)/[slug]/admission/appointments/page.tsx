@@ -42,7 +42,7 @@ export default async function AppointmentsPage({ params, searchParams }: Props) 
   const appointments = (appointmentsRaw as unknown as AppointmentWithPatient[]) || []
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-20 md:pb-12">
+    <div className="w-full space-y-6 pb-20 md:pb-12">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-4 md:px-0">
         <div>
           <h2 className="text-3xl font-black text-gray-900 tracking-tight">Agenda</h2>

@@ -38,7 +38,7 @@ export default async function TeamSettingsPage({ params }: Props) {
   const members = (membersRaw as unknown as Member[]) || []
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-12">
+    <div className="w-full space-y-6 pb-12">
       <div className="flex items-center gap-4 px-4 md:px-0">
         <Link href={`/${slug}/settings/profile`} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
           <ArrowLeft className="w-5 h-5 text-gray-500" />

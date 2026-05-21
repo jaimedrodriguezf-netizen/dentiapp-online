@@ -21,8 +21,8 @@ export default async function PatientsPage({ params }: Props) {
   const patients = (patientsRaw as unknown as PatientData[]) || []
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-12">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-4 md:px-0">
+    <div className="w-full space-y-6 pb-12">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-4 md:px-0 sticky top-0 z-20 bg-base-100/80 backdrop-blur-md py-4 md:py-0 md:relative md:bg-transparent md:backdrop-blur-none -mx-4 px-4 md:mx-0 md:px-0">
         <div>
           <h2 className="text-3xl font-black text-gray-900 tracking-tight">Pacientes</h2>
           <p className="text-gray-500 font-medium mt-1">
@@ -39,7 +39,7 @@ export default async function PatientsPage({ params }: Props) {
       </div>
 
       {/* Buscador Rápido (Visual) */}
-      <div className="px-4 md:px-0">
+      <div className="px-4 md:px-0 sticky top-[88px] md:top-0 z-10 bg-base-100/80 backdrop-blur-md md:bg-transparent md:backdrop-blur-none pb-3 -mx-4 px-4 md:mx-0 md:px-0 md:static md:pb-0">
         <div className="relative group">
           <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-blue-500 transition-colors">
             <Search className="w-5 h-5" />

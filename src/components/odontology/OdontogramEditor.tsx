@@ -18,6 +18,14 @@ interface OdontogramEditorProps {
 
 const statusOptions = Object.keys(toothColors).filter(s => s !== 'multiple')
 
+const surfaceLabels: Record<string, string> = {
+  V: 'Vestibular (mejilla)',
+  D: 'Distal (atrás)',
+  M: 'Mesial (adelante)',
+  L: 'Lingual (lengua)',
+  O: 'Oclusal (morder)',
+}
+
 export default function OdontogramEditor({ initialTeeth, onTeethChange, readOnly = false }: OdontogramEditorProps) {
   const [teeth, setTeeth] = useState<ToothData[]>(initialTeeth)
   const [selectedTooth, setSelectedTooth] = useState<number | null>(null)
@@ -120,7 +128,7 @@ export default function OdontogramEditor({ initialTeeth, onTeethChange, readOnly
           {/* Legend responsiva */}
           <div className="p-4 bg-gray-50 border-t border-gray-100">
             <div className="flex flex-wrap gap-x-4 gap-y-2 justify-center">
-              {statusOptions.slice(0, 6).map((status) => (
+              {statusOptions.map((status) => (
                 <div key={status} className="flex items-center gap-1.5 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
                   <div
                     className="w-2.5 h-2.5 rounded-full"
@@ -129,7 +137,6 @@ export default function OdontogramEditor({ initialTeeth, onTeethChange, readOnly
                   {toothLabels[status]}
                 </div>
               ))}
-              <div className="text-[10px] font-bold text-blue-500">Ver más...</div>
             </div>
           </div>
         </div>
@@ -194,15 +201,18 @@ export default function OdontogramEditor({ initialTeeth, onTeethChange, readOnly
                           <div className="w-8 h-8 rounded-lg bg-gray-900 text-white flex items-center justify-center text-xs font-black">
                             {surface}
                           </div>
-                          <select
-                            value={selectedSurfaces?.[surface] || 'healthy'}
-                            onChange={(e) => handleSurfaceChange(selectedTooth, surface, e.target.value)}
-                            className="flex-1 sm:w-full rounded-xl border-2 border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-700 focus:border-blue-500 focus:outline-none"
-                          >
-                            {statusOptions.map((status) => (
-                              <option key={status} value={status}>{toothLabels[status]}</option>
-                            ))}
-                          </select>
+                          <div className="flex-1 sm:w-full space-y-0.5">
+                            <span className="text-[9px] font-black text-gray-400 block leading-none">{surfaceLabels[surface]}</span>
+                            <select
+                              value={selectedSurfaces?.[surface] || 'healthy'}
+                              onChange={(e) => handleSurfaceChange(selectedTooth, surface, e.target.value)}
+                              className="w-full rounded-xl border-2 border-gray-200 bg-white px-2 py-1.5 text-[10px] font-bold text-gray-700 focus:border-blue-500 focus:outline-none"
+                            >
+                              {statusOptions.map((status) => (
+                                <option key={status} value={status}>{toothLabels[status]}</option>
+                              ))}
+                            </select>
+                          </div>
                         </div>
                       ))}
                     </div>

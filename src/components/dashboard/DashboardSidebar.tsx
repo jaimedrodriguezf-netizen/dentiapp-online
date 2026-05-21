@@ -12,6 +12,7 @@ import {
   QrCode,
   Shield,
   LucideIcon,
+  Crown,
 } from 'lucide-react'
 import { Tooth as ToothIcon } from '@/components/ui/ToothIcon'
 import { APP_VERSION } from '@/lib/version'
@@ -94,6 +95,13 @@ const menuItems: MenuItem[] = [
     planRequired: 'business'
   },
   { 
+    href: '/settings/subscription', 
+    label: 'Suscripción', 
+    icon: Crown, 
+    permissionKey: 'view_settings',
+    roles: ['admin']
+  },
+  { 
     href: '/settings/profile', 
     label: 'Configuración', 
     icon: Settings, 
@@ -112,7 +120,7 @@ export default function DashboardSidebar({ role, tenant, permissions = {}, plan 
   }
 
   const hasPermission = (item: MenuItem): boolean => {
-    if (role === 'admin' || role === 'ceo') return true
+    if (role === 'admin') return true
     if (item.planRequired === 'business' && plan !== 'business') return false
     if (item.roles && !item.roles.includes(role)) return false
     if (role === 'supervisor') return true

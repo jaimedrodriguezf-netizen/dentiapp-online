@@ -68,21 +68,21 @@ export default function OdontogramSVG({ teeth, onToothClick, selectedTooth }: Od
   const cellW = 44
   const cellH = 60
   const gap = 4
-  const jawGap = 30
+  const jawGap = 36
   const deciduousGap = 16
   const offsetX = 20
-  const offsetY = 20
+  const offsetY = 32
 
   return (
     <svg
-      viewBox={`0 0 ${cellW * 16 + gap * 15 + offsetX * 2} ${cellH * 4 + gap * 3 + deciduousGap * 2 + jawGap + offsetY * 2 + 40}`}
+      viewBox={`0 0 ${cellW * 16 + gap * 15 + offsetX * 2} ${cellH * 4 + gap * 3 + deciduousGap * 3 + jawGap * 2 + offsetY * 2 + 20}`}
       className="w-full max-w-3xl mx-auto"
     >
       {/* Labels */}
-      <text x={offsetX} y={offsetY - 5} className="text-xs fill-gray-400" fontWeight="500">Permanente — Superior</text>
-      <text x={offsetX} y={offsetY + cellH + jawGap + 5} className="text-xs fill-gray-400" fontWeight="500">Permanente — Inferior</text>
-      <text x={offsetX} y={offsetY + cellH * 2 + jawGap * 2 + gap + deciduousGap - 5} className="text-xs fill-gray-400" fontWeight="500">Decidua — Superior</text>
-      <text x={offsetX} y={offsetY + cellH * 3 + jawGap * 2 + gap * 2 + deciduousGap + 5} className="text-xs fill-gray-400" fontWeight="500">Decidua — Inferior</text>
+      <text x={offsetX} y={offsetY - 12} className="text-xs fill-gray-400" fontWeight="500">Permanente — Superior</text>
+      <text x={offsetX} y={offsetY + cellH + jawGap - 12} className="text-xs fill-gray-400" fontWeight="500">Permanente — Inferior</text>
+      <text x={offsetX} y={offsetY + cellH * 2 + jawGap * 2 + gap + deciduousGap - 12} className="text-xs fill-gray-400" fontWeight="500">Decidua — Superior</text>
+      <text x={offsetX} y={offsetY + cellH * 3 + jawGap * 2 + gap * 2 + deciduousGap * 2 - 12} className="text-xs fill-gray-400" fontWeight="500">Decidua — Inferior</text>
 
       {/* Permanent teeth */}
       {permanentJaw.map((row, rowIdx) =>
@@ -118,7 +118,7 @@ export default function OdontogramSVG({ teeth, onToothClick, selectedTooth }: Od
           const isUpper = rowIdx === 0
           const y = isUpper
             ? offsetY + cellH * 2 + jawGap * 2 + gap + deciduousGap
-            : offsetY + cellH * 3 + jawGap * 2 + gap * 2 + deciduousGap
+            : offsetY + cellH * 3 + jawGap * 2 + gap * 2 + deciduousGap * 2
           const x = offsetX + colIdx * (cellW + gap)
 
           let drawX = x
@@ -191,8 +191,9 @@ function ToothCell({
       )}
       <text
         x={cellW / 2}
-        y={cellH / 2 + 4}
+        y={cellH / 2}
         textAnchor="middle"
+        dominantBaseline="central"
         className="text-xs fill-gray-700"
         fontWeight={tooth ? '600' : '400'}
       >
