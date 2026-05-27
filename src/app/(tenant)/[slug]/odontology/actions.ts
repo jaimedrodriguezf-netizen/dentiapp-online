@@ -29,6 +29,10 @@ export interface VitalSignsData {
 export interface OralHygieneData {
   rating?: string | null
   plaque_index?: number | null
+  piezas_presentes?: number | null
+  superficies_evaluadas?: number | null
+  superficies_con_placa?: number | null
+  oleary_data?: Record<number, { absent: boolean; surfaces: Record<string, boolean> }> | null
 }
 
 export interface DiagnosisData {
@@ -104,7 +108,7 @@ export interface TreatmentSessionData {
   dental_record_id: string
 }
 
-async function getTenantId(slug: string) {
+export async function getTenantId(slug: string) {
   const supabase = await createClient()
   const { data: tenant } = await supabase
     .from('tenants')
@@ -377,6 +381,38 @@ export async function updateDentalRecord(slug: string, recordId: string, formDat
 
   if (error) return { error: error.message }
 
+  // Save odontogram teeth (delete existing first to clean, then re-insert)
+  await supabase
+    .from('odontogram_teeth')
+    .delete()
+    .eq('dental_record_id', recordId)
+    .eq('tenant_id', tenantId)
+
+  const odontogramTeethRaw = formData.get('odontogram_teeth') as string
+  if (odontogramTeethRaw) {
+    try {
+      const teeth = JSON.parse(odontogramTeethRaw)
+      if (Array.isArray(teeth) && teeth.length > 0) {
+        const validatedTeeth = teeth
+          .filter((t): t is { tooth_number: number; status: string; surfaces?: Record<string, string> } => 
+            t && typeof t === 'object' && 'tooth_number' in t && 'status' in t
+          )
+          .map((tooth) => ({
+            dental_record_id: recordId,
+            tenant_id: tenantId,
+            tooth_number: Number(tooth.tooth_number),
+            status: String(tooth.status),
+            surfaces: (tooth.surfaces && typeof tooth.surfaces === 'object') ? tooth.surfaces : null,
+          }))
+        if (validatedTeeth.length > 0) {
+          await supabase.from('odontogram_teeth').insert(validatedTeeth)
+        }
+      }
+    } catch (err) {
+      console.error('Failed to parse and save odontogram teeth in update', err)
+    }
+  }
+
   redirect(`/${slug}/odontology/form-033/${recordId}`)
 }
 
@@ -438,12 +474,29 @@ function buildVitalSigns(formData: FormData) {
 function buildOralHygiene(formData: FormData) {
   const rating = formData.get('oral_hygiene_rating') as string
   const plaqueIndex = formData.get('oral_hygiene_plaque_index') as string
+  const piezasPresentes = formData.get('oral_hygiene_piezas_presentes') as string
+  const superficiesEvaluadas = formData.get('oral_hygiene_superficies_evaluadas') as string
+  const superficiesConPlaca = formData.get('oral_hygiene_superficies_con_placa') as string
+  const olearyDataRaw = formData.get('oral_hygiene_oleary_data') as string
 
-  if (!rating && !plaqueIndex) return null
+  let olearyData = null
+  if (olearyDataRaw) {
+    try {
+      olearyData = JSON.parse(olearyDataRaw)
+    } catch (e) {
+      console.error('Failed to parse oleary data JSON', e)
+    }
+  }
+
+  if (!rating && !plaqueIndex && !piezasPresentes && !superficiesEvaluadas && !superficiesConPlaca && !olearyData) return null
 
   return {
     ...(rating && { rating }),
-    ...(plaqueIndex && { plaque_index: parseInt(plaqueIndex) }),
+    ...(plaqueIndex && { plaque_index: parseFloat(plaqueIndex) }),
+    ...(piezasPresentes && { piezas_presentes: parseInt(piezasPresentes) }),
+    ...(superficiesEvaluadas && { superficies_evaluadas: parseInt(superficiesEvaluadas) }),
+    ...(superficiesConPlaca && { superficies_con_placa: parseInt(superficiesConPlaca) }),
+    ...(olearyData && { oleary_data: olearyData }),
   }
 }
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import OdontogramSVG, { toothColors, toothLabels, SURFACES, isDeciduous } from '@/components/odontology/OdontogramSVG'
+import OdontogramSVG, { toothColors, toothLabels, isDeciduous } from '@/components/odontology/OdontogramSVG'
 import { Info, MoveHorizontal } from 'lucide-react'
 
 interface ToothData {
@@ -17,14 +17,6 @@ interface OdontogramEditorProps {
 }
 
 const statusOptions = Object.keys(toothColors).filter(s => s !== 'multiple')
-
-const surfaceLabels: Record<string, string> = {
-  V: 'Vestibular (mejilla)',
-  D: 'Distal (atrás)',
-  M: 'Mesial (adelante)',
-  L: 'Lingual (lengua)',
-  O: 'Oclusal (morder)',
-}
 
 export default function OdontogramEditor({ initialTeeth, onTeethChange, readOnly = false }: OdontogramEditorProps) {
   const [teeth, setTeeth] = useState<ToothData[]>(initialTeeth)
@@ -192,29 +184,109 @@ export default function OdontogramEditor({ initialTeeth, onTeethChange, readOnly
                     </div>
                   </div>
 
-                  {/* Surface selector optimizado */}
+                  {/* Surface cycle helper function and giant visual tooth editor */}
                   <div>
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 block ml-1">Por Superficie</label>
-                    <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 md:gap-2">
-                      {SURFACES.map((surface) => (
-                        <div key={surface} className="flex sm:flex-col items-center gap-3 sm:gap-1 p-2 sm:p-0 bg-gray-50 sm:bg-transparent rounded-xl">
-                          <div className="w-8 h-8 rounded-lg bg-gray-900 text-white flex items-center justify-center text-xs font-black">
-                            {surface}
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 block ml-1">
+                      Por Superficie (Hacia las caras para cambiar de estado)
+                    </label>
+                    
+                    <div className="flex flex-col md:flex-row items-center gap-8 justify-center bg-gray-50/50 p-6 rounded-2xl border border-gray-150 shadow-xs">
+                      {/* Diente interactivo SVG en grande */}
+                      <div className="relative w-32 h-32 flex-shrink-0 select-none my-4">
+                        <svg viewBox="0 0 120 120" className="w-full h-full drop-shadow-sm">
+                          {/* Vestibular (V) - Arriba */}
+                          <polygon
+                            points="0,0 120,0 80,40 40,40"
+                            fill={toothColors[selectedSurfaces?.V || 'healthy'] || '#ffffff'}
+                            stroke="#475569"
+                            strokeWidth={1.5}
+                            className="cursor-pointer hover:brightness-95 transition-all"
+                            onClick={() => {
+                              const curr = selectedSurfaces?.V || 'healthy'
+                              const next = curr === 'healthy' ? 'caries' : curr === 'caries' ? 'filling' : 'healthy'
+                              handleSurfaceChange(selectedTooth, 'V', next)
+                            }}
+                          />
+                          {/* Distal (D) - Derecha */}
+                          <polygon
+                            points="120,0 120,120 80,80 80,40"
+                            fill={toothColors[selectedSurfaces?.D || 'healthy'] || '#ffffff'}
+                            stroke="#475569"
+                            strokeWidth={1.5}
+                            className="cursor-pointer hover:brightness-95 transition-all"
+                            onClick={() => {
+                              const curr = selectedSurfaces?.D || 'healthy'
+                              const next = curr === 'healthy' ? 'caries' : curr === 'caries' ? 'filling' : 'healthy'
+                              handleSurfaceChange(selectedTooth, 'D', next)
+                            }}
+                          />
+                          {/* Lingual (L) - Abajo */}
+                          <polygon
+                            points="40,80 80,80 120,120 0,120"
+                            fill={toothColors[selectedSurfaces?.L || 'healthy'] || '#ffffff'}
+                            stroke="#475569"
+                            strokeWidth={1.5}
+                            className="cursor-pointer hover:brightness-95 transition-all"
+                            onClick={() => {
+                              const curr = selectedSurfaces?.L || 'healthy'
+                              const next = curr === 'healthy' ? 'caries' : curr === 'caries' ? 'filling' : 'healthy'
+                              handleSurfaceChange(selectedTooth, 'L', next)
+                            }}
+                          />
+                          {/* Mesial (M) - Izquierda */}
+                          <polygon
+                            points="0,0 40,40 40,80 0,120"
+                            fill={toothColors[selectedSurfaces?.M || 'healthy'] || '#ffffff'}
+                            stroke="#475569"
+                            strokeWidth={1.5}
+                            className="cursor-pointer hover:brightness-95 transition-all"
+                            onClick={() => {
+                              const curr = selectedSurfaces?.M || 'healthy'
+                              const next = curr === 'healthy' ? 'caries' : curr === 'caries' ? 'filling' : 'healthy'
+                              handleSurfaceChange(selectedTooth, 'M', next)
+                            }}
+                          />
+                          {/* Oclusal/Incisal (O) - Centro */}
+                          <polygon
+                            points="40,40 80,40 80,80 40,80"
+                            fill={toothColors[selectedSurfaces?.O || 'healthy'] || '#ffffff'}
+                            stroke="#475569"
+                            strokeWidth={1.5}
+                            className="cursor-pointer hover:brightness-95 transition-all"
+                            onClick={() => {
+                              const curr = selectedSurfaces?.O || 'healthy'
+                              const next = curr === 'healthy' ? 'caries' : curr === 'caries' ? 'filling' : 'healthy'
+                              handleSurfaceChange(selectedTooth, 'O', next)
+                            }}
+                          />
+                        </svg>
+
+                        {/* Etiquetas de orientación */}
+                        <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] font-black text-gray-400 uppercase tracking-widest">Vestibular (V)</span>
+                        <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] font-black text-gray-400 uppercase tracking-widest">Lingual (L)</span>
+                        <span className="absolute top-1/2 -left-10 -translate-y-1/2 text-[9px] font-black text-gray-400 uppercase tracking-widest">Mesial (M)</span>
+                        <span className="absolute top-1/2 -right-10 -translate-y-1/2 text-[9px] font-black text-gray-400 uppercase tracking-widest">Distal (D)</span>
+                        <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[10px] font-black text-gray-800 pointer-events-none">O</span>
+                      </div>
+
+                      {/* Guía rápida de colores */}
+                      <div className="flex-1 space-y-3 border-l border-gray-150 pl-6 text-xs text-gray-500 font-bold">
+                        <p className="text-[10px] font-black uppercase text-gray-400 tracking-wider">Ciclado de estados</p>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-3.5 h-3.5 bg-white border-2 border-gray-200 rounded" />
+                            <span>1er clic: <strong>Sano (Blanco)</strong></span>
                           </div>
-                          <div className="flex-1 sm:w-full space-y-0.5">
-                            <span className="text-[9px] font-black text-gray-400 block leading-none">{surfaceLabels[surface]}</span>
-                            <select
-                              value={selectedSurfaces?.[surface] || 'healthy'}
-                              onChange={(e) => handleSurfaceChange(selectedTooth, surface, e.target.value)}
-                              className="w-full rounded-xl border-2 border-gray-200 bg-white px-2 py-1.5 text-[10px] font-bold text-gray-700 focus:border-blue-500 focus:outline-none"
-                            >
-                              {statusOptions.map((status) => (
-                                <option key={status} value={status}>{toothLabels[status]}</option>
-                              ))}
-                            </select>
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-3.5 h-3.5 bg-[#f87171] border border-red-400 rounded shadow-sm" />
+                            <span>2do clic: <strong>Caries (Rojo)</strong></span>
+                          </div>
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-3.5 h-3.5 bg-[#60a5fa] border border-blue-400 rounded shadow-sm" />
+                            <span>3er clic: <strong>Obturado / Calza (Azul)</strong></span>
                           </div>
                         </div>
-                      ))}
+                      </div>
                     </div>
                   </div>
                 </div>

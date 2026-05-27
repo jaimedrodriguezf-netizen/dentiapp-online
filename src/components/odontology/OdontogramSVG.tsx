@@ -103,7 +103,6 @@ export default function OdontogramSVG({ teeth, onToothClick, selectedTooth }: Od
               x={drawX}
               y={y}
               cellW={cellW}
-              cellH={cellH}
               selected={selectedTooth === toothNum}
               onClick={onToothClick}
             />
@@ -132,7 +131,6 @@ export default function OdontogramSVG({ teeth, onToothClick, selectedTooth }: Od
               x={drawX}
               y={y}
               cellW={cellW}
-              cellH={cellH}
               selected={selectedTooth === toothNum}
               onClick={onToothClick}
             />
@@ -149,7 +147,6 @@ function ToothCell({
   x,
   y,
   cellW,
-  cellH,
   selected,
   onClick,
 }: {
@@ -158,47 +155,107 @@ function ToothCell({
   x: number
   y: number
   cellW: number
-  cellH: number
   selected: boolean
   onClick?: (n: number) => void
 }) {
-  const hasSurfaces = tooth?.surfaces && Object.keys(tooth.surfaces).length > 0
-  const fillColor = tooth ? toothColors[tooth.status] || '#e5e7eb' : '#e5e7eb'
+  const size = 28
+  const figX = (cellW - size) / 2
+  const figY = 24
+
+  function getSurfaceColor(surf: string) {
+    if (tooth?.status === 'extraction_done' || tooth?.status === 'extraction_indicated') {
+      return '#f3f4f6'
+    }
+    const surfStatus = tooth?.surfaces?.[surf] || (tooth?.status !== 'multiple' ? tooth?.status : 'healthy') || 'healthy'
+    return toothColors[surfStatus] || '#ffffff'
+  }
 
   return (
     <g
       transform={`translate(${x}, ${y})`}
       onClick={() => onClick?.(toothNum)}
-      className="cursor-pointer"
+      className="cursor-pointer select-none"
     >
-      <rect
-        x={1}
-        y={1}
-        width={cellW - 2}
-        height={cellH - 2}
-        rx={6}
-        ry={6}
-        fill={fillColor}
-        stroke={selected ? '#2563eb' : '#d1d5db'}
-        strokeWidth={selected ? 2.5 : 1}
-      />
-      {/* Surface lines */}
-      {hasSurfaces && (
-        <>
-          <line x1={cellW / 2} y1={1} x2={cellW / 2} y2={cellH - 1} stroke="#fff" strokeWidth={1} opacity={0.5} />
-          <line x1={1} y1={cellH / 2} x2={cellW - 1} y2={cellH / 2} stroke="#fff" strokeWidth={1} opacity={0.5} />
-        </>
+      {/* Selection Border */}
+      {selected && (
+        <rect
+          x={figX - 3}
+          y={figY - 3}
+          width={size + 6}
+          height={size + 6}
+          rx={6}
+          ry={6}
+          fill="none"
+          stroke="#2563eb"
+          strokeWidth={2}
+        />
       )}
+
+      {/* Tooth Number */}
       <text
         x={cellW / 2}
-        y={cellH / 2}
+        y={12}
         textAnchor="middle"
         dominantBaseline="central"
-        className="text-xs fill-gray-700"
-        fontWeight={tooth ? '600' : '400'}
+        className="text-[10px] fill-gray-500 font-black"
       >
         {toothNum}
       </text>
+
+      {/* 5-Surface Diamond Graphic */}
+      <g transform={`translate(${figX}, ${figY})`}>
+        {/* Vestibular (V) */}
+        <polygon
+          points="0,0 28,0 19,9 9,9"
+          fill={getSurfaceColor('V')}
+          stroke="#94a3b8"
+          strokeWidth={0.5}
+        />
+        {/* Distal (D) */}
+        <polygon
+          points="28,0 28,28 19,19 19,9"
+          fill={getSurfaceColor('D')}
+          stroke="#94a3b8"
+          strokeWidth={0.5}
+        />
+        {/* Lingual (L) */}
+        <polygon
+          points="9,19 19,19 28,28 0,28"
+          fill={getSurfaceColor('L')}
+          stroke="#94a3b8"
+          strokeWidth={0.5}
+        />
+        {/* Mesial (M) */}
+        <polygon
+          points="0,0 9,9 9,19 0,28"
+          fill={getSurfaceColor('M')}
+          stroke="#94a3b8"
+          strokeWidth={0.5}
+        />
+        {/* Oclusal/Incisal (O) */}
+        <polygon
+          points="9,9 19,9 19,19 9,19"
+          fill={getSurfaceColor('O')}
+          stroke="#94a3b8"
+          strokeWidth={0.5}
+        />
+      </g>
+
+      {/* Extraction Needed (Red X) */}
+      {tooth?.status === 'extraction_indicated' && (
+        <g stroke="#ef4444" strokeWidth={2}>
+          <line x1={figX} y1={figY} x2={figX + size} y2={figY + size} />
+          <line x1={figX + size} y1={figY} x2={figX} y2={figY + size} />
+        </g>
+      )}
+
+      {/* Extraction Done (Blue X) */}
+      {tooth?.status === 'extraction_done' && (
+        <g stroke="#2563eb" strokeWidth={2}>
+          <line x1={figX} y1={figY} x2={figX + size} y2={figY + size} />
+          <line x1={figX + size} y1={figY} x2={figX} y2={figY + size} />
+        </g>
+      )}
     </g>
   )
 }
