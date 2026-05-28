@@ -819,6 +819,93 @@ function TreatmentSessionsDisplay({
 }) {
   const nextSessionNumber = sessions.length + 1
 
+  // Ordenar cronológicamente descendente (lo más reciente primero)
+  const sortedSessions = [...sessions].sort((a, b) => b.session_number - a.session_number)
+
+  // Mostrar por defecto las 3 sesiones más recientes
+  const visibleSessions = sortedSessions.slice(0, 3)
+  const olderSessions = sortedSessions.slice(3)
+
+  const renderSessionNode = (session: TreatmentSessionData) => {
+    const formattedDate = session.session_date
+      ? new Date(session.session_date).toLocaleDateString('es-EC', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        })
+      : 'Sin fecha'
+
+    return (
+      <div
+        key={session.id}
+        className="relative group transition-all"
+      >
+        {/* Timeline node badge centered on the vertical line */}
+        <div className="absolute -left-[35px] md:-left-[43px] top-1.5 w-8 h-8 rounded-full bg-blue-600 text-white font-black flex items-center justify-center border-4 border-white shadow-md shadow-blue-200 text-xs select-none">
+          {session.session_number}
+        </div>
+
+        <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all flex flex-col space-y-4">
+          {/* Session metadata header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-gray-50">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black text-gray-900 uppercase">
+                Sesión {session.session_number}
+              </span>
+              <span className="w-1.5 h-1.5 rounded-full bg-gray-300 hidden sm:inline" />
+              <span className="text-xs font-bold text-gray-500">{formattedDate}</span>
+            </div>
+            {session.signature && (
+              <span className="self-start sm:self-auto text-[9px] font-black text-blue-600 bg-blue-50/70 border border-blue-100 px-2 py-0.5 rounded-lg uppercase tracking-wider">
+                Médico: {session.signature}
+              </span>
+            )}
+          </div>
+
+          {/* Timeline fields: highlight what treatment was performed */}
+          <div className="grid grid-cols-1 gap-4">
+            {/* TREATMENT performed (Primary highlight) */}
+            <div className="bg-green-50/30 border-l-4 border-green-500 p-4 rounded-r-xl space-y-1">
+              <div className="flex items-center gap-1.5 text-[9px] font-black text-green-700 uppercase tracking-widest">
+                <Activity className="w-3.5 h-3.5" />
+                Tratamientos / Procedimientos Realizados
+              </div>
+              <p className="text-sm text-gray-800 font-medium whitespace-pre-wrap pl-0.5">
+                {session.procedures || 'No se registraron procedimientos en esta sesión.'}
+              </p>
+            </div>
+
+            {/* DIAGNOSES and complications */}
+            {session.diagnoses_complications && (
+              <div className="bg-amber-50/30 border-l-4 border-amber-500 p-4 rounded-r-xl space-y-1">
+                <div className="flex items-center gap-1.5 text-[9px] font-black text-amber-700 uppercase tracking-widest">
+                  <Stethoscope className="w-3.5 h-3.5" />
+                  Diagnósticos y Complicaciones
+                </div>
+                <p className="text-sm text-gray-800 whitespace-pre-wrap pl-0.5">
+                  {session.diagnoses_complications}
+                </p>
+              </div>
+            )}
+
+            {/* PRESCRIPTIONS */}
+            {session.prescriptions && (
+              <div className="bg-purple-50/30 border-l-4 border-purple-500 p-4 rounded-r-xl space-y-1">
+                <div className="flex items-center gap-1.5 text-[9px] font-black text-purple-700 uppercase tracking-widest">
+                  <Pill className="w-3.5 h-3.5" />
+                  Prescripciones / Receta Asociada
+                </div>
+                <p className="text-sm text-gray-800 whitespace-pre-wrap pl-0.5">
+                  {session.prescriptions}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="card bg-white border border-gray-100 shadow-sm mx-4 md:mx-0 rounded-3xl overflow-hidden">
       <div className="card-body p-5 md:p-8">
@@ -851,85 +938,27 @@ function TreatmentSessionsDisplay({
         {sessions.length > 0 ? (
           /* Timeline wrapper */
           <div className="relative border-l-2 border-blue-100 ml-4 md:ml-8 pl-6 md:pl-8 py-2 space-y-8">
-            {sessions.map((session) => {
-              const formattedDate = session.session_date
-                ? new Date(session.session_date).toLocaleDateString('es-EC', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                  })
-                : 'Sin fecha'
+            {/* 3 Sesiones más recientes siempre visibles */}
+            {visibleSessions.map(renderSessionNode)}
 
-              return (
-                <div
-                  key={session.id}
-                  className="relative group transition-all"
-                >
-                  {/* Timeline node badge centered on the vertical line */}
-                  <div className="absolute -left-[35px] md:-left-[43px] top-1.5 w-8 h-8 rounded-full bg-blue-600 text-white font-black flex items-center justify-center border-4 border-white shadow-md shadow-blue-200 text-xs select-none">
-                    {session.session_number}
+            {/* Sesiones anteriores colapsables de forma interactiva y nativa */}
+            {olderSessions.length > 0 && (
+              <details className="group border-none outline-none">
+                <summary className="list-none outline-none cursor-pointer flex items-center justify-start -ml-6 md:-ml-8 py-2">
+                  <div className="flex items-center gap-3">
+                    <span className="btn btn-outline btn-sm btn-primary rounded-full px-6 font-black text-xs uppercase tracking-wider shadow-sm group-open:hidden flex items-center gap-2 cursor-pointer">
+                      Ver las {olderSessions.length} sesiones anteriores
+                    </span>
+                    <span className="btn btn-outline btn-sm btn-secondary rounded-full px-6 font-black text-xs uppercase tracking-wider shadow-sm hidden group-open:flex items-center gap-2 cursor-pointer">
+                      Ocultar sesiones anteriores
+                    </span>
                   </div>
-
-                  <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all flex flex-col space-y-4">
-                    {/* Session metadata header */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-gray-50">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-black text-gray-900 uppercase">
-                          Sesión {session.session_number}
-                        </span>
-                        <span className="w-1.5 h-1.5 rounded-full bg-gray-300 hidden sm:inline" />
-                        <span className="text-xs font-bold text-gray-500">{formattedDate}</span>
-                      </div>
-                      {session.signature && (
-                        <span className="self-start sm:self-auto text-[9px] font-black text-blue-600 bg-blue-50/70 border border-blue-100 px-2 py-0.5 rounded-lg uppercase tracking-wider">
-                          Médico: {session.signature}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Timeline fields: highlight what treatment was performed */}
-                    <div className="grid grid-cols-1 gap-4">
-                      {/* TREATMENT performed (Primary highlight) */}
-                      <div className="bg-green-50/30 border-l-4 border-green-500 p-4 rounded-r-xl space-y-1">
-                        <div className="flex items-center gap-1.5 text-[9px] font-black text-green-700 uppercase tracking-widest">
-                          <Activity className="w-3.5 h-3.5" />
-                          Tratamientos / Procedimientos Realizados
-                        </div>
-                        <p className="text-sm text-gray-800 font-medium whitespace-pre-wrap pl-0.5">
-                          {session.procedures || 'No se registraron procedimientos en esta sesión.'}
-                        </p>
-                      </div>
-
-                      {/* DIAGNOSES and complications */}
-                      {session.diagnoses_complications && (
-                        <div className="bg-amber-50/30 border-l-4 border-amber-500 p-4 rounded-r-xl space-y-1">
-                          <div className="flex items-center gap-1.5 text-[9px] font-black text-amber-700 uppercase tracking-widest">
-                            <Stethoscope className="w-3.5 h-3.5" />
-                            Diagnósticos y Complicaciones
-                          </div>
-                          <p className="text-sm text-gray-800 whitespace-pre-wrap pl-0.5">
-                            {session.diagnoses_complications}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* PRESCRIPTIONS */}
-                      {session.prescriptions && (
-                        <div className="bg-purple-50/30 border-l-4 border-purple-500 p-4 rounded-r-xl space-y-1">
-                          <div className="flex items-center gap-1.5 text-[9px] font-black text-purple-700 uppercase tracking-widest">
-                            <Pill className="w-3.5 h-3.5" />
-                            Prescripciones / Receta Asociada
-                          </div>
-                          <p className="text-sm text-gray-800 whitespace-pre-wrap pl-0.5">
-                            {session.prescriptions}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                </summary>
+                <div className="space-y-8 pt-6 animate-in fade-in slide-in-from-top-4 duration-200">
+                  {olderSessions.map(renderSessionNode)}
                 </div>
-              )
-            })}
+              </details>
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center p-8 bg-gray-50/40 rounded-[28px] border-2 border-dashed border-gray-200 text-center space-y-3">
