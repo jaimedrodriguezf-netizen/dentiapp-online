@@ -40,6 +40,8 @@ export interface DiagnosisData {
   description?: string
   text?: string
   type?: string
+  pieza_dental?: number | number[] | null
+  caras_afectadas?: string[]
 }
 
 export interface StomatognathicData {
@@ -54,7 +56,7 @@ export interface DentalRecordRow {
   control_date?: string | null
   consultation_reason: string | null
   current_problem?: { text?: string } | string | null
-  diagnosis?: DiagnosisData | null
+  diagnosis?: DiagnosisData | DiagnosisData[] | null
   vital_signs?: VitalSignsData | null
   stomatognathic_exam?: StomatognathicData | null
   personal_history?: unknown
@@ -426,18 +428,48 @@ function parsePregnant(formData: FormData): boolean | null {
 
 /** Build structured diagnosis JSONB from CIE-10 fields + clinical notes + type */
 function buildDiagnosis(formData: FormData) {
+  const diagnosesJson = formData.get('diagnoses_json') as string
+  if (diagnosesJson) {
+    try {
+      const list = JSON.parse(diagnosesJson)
+      if (Array.isArray(list) && list.length > 0) {
+        return list
+      }
+    } catch (err) {
+      console.error('Failed to parse diagnoses_json', err)
+    }
+  }
+
   const code = formData.get('diagnosis_code') as string
   const description = formData.get('diagnosis_description') as string
   const notes = formData.get('diagnosis_notes') as string
   const type = formData.get('diagnosis_type') as string
+  const tooth = formData.get('diagnosis_tooth') as string
+  const teethRaw = formData.getAll('diagnosis_teeth') as string[]
+  const surfaces = formData.getAll('diagnosis_surfaces') as string[]
 
   if (!code && !notes) return null
+
+  let piezas: number | number[] | null = null
+  if (teethRaw && teethRaw.length > 0) {
+    const parsedTeeth = teethRaw.map(t => parseInt(t, 10)).filter(n => !isNaN(n))
+    if (parsedTeeth.length === 1) {
+      piezas = parsedTeeth[0]
+    } else if (parsedTeeth.length > 1) {
+      piezas = parsedTeeth
+    }
+  } else if (tooth) {
+    const parsed = parseInt(tooth, 10)
+    piezas = isNaN(parsed) ? null : parsed
+  }
 
   return {
     ...(code && { code }),
     ...(description && { description }),
     ...(notes && { text: notes }),
     ...(type && { type }),
+    pieza_dental: piezas,
+    caras_afectadas: surfaces || [],
   }
 }
 
@@ -543,6 +575,36 @@ export async function getTreatmentSessions(slug: string, recordId: string): Prom
     .order('session_number', { ascending: true })
 
   return (data as TreatmentSessionData[]) ?? []
+}
+
+export async function addTreatmentSession(
+  slug: string,
+  recordId: string,
+  sessionData: {
+    session_number: number
+    session_date: string
+    diagnoses_complications: string
+    procedures: string
+    prescriptions?: string
+    signature?: string
+  }
+): Promise<{ error: string } | { success: true }> {
+  const supabase = await createClient()
+  const tenantId = await getTenantId(slug)
+  if (!tenantId) return { error: 'No tienes una clínica activa' }
+
+  const { error } = await supabase.from('treatment_sessions').insert({
+    dental_record_id: recordId,
+    session_number: sessionData.session_number,
+    session_date: sessionData.session_date,
+    diagnoses_complications: sessionData.diagnoses_complications || null,
+    procedures: sessionData.procedures || null,
+    prescriptions: sessionData.prescriptions || null,
+    signature: sessionData.signature || null,
+  })
+
+  if (error) return { error: error.message }
+  return { success: true }
 }
 
 /* ───────── Prescriptions (recetas) ───────── */

@@ -1,9 +1,10 @@
 import { getDentalRecord, getPrescriptions, getOdontogramTeeth, getTreatmentSessions, DiagnosisData, VitalSignsData, OralHygieneData, StomatognathicData, DentalRecordRow } from '../../actions'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, Edit, Printer, Activity, FileText, Pill, Calendar, CreditCard, User, Baby, Stethoscope } from 'lucide-react'
+import { ArrowLeft, Edit, Printer, Activity, FileText, Pill, Calendar, CreditCard, User, Baby, Stethoscope, ClipboardList } from 'lucide-react'
 import OdontogramSVG from '@/components/odontology/OdontogramSVG'
 import PrescriptionModalButton from '@/components/odontology/PrescriptionModalButton'
+import TreatmentSessionModalButton from '@/components/odontology/TreatmentSessionModalButton'
 
 interface Props {
   params: Promise<{ slug: string; id: string }>
@@ -354,9 +355,7 @@ export default async function Form033DetailPage({ params }: Props) {
       </div>
 
       {/* Sesiones de Tratamiento */}
-      {sessions.length > 0 && (
-        <TreatmentSessionsDisplay sessions={sessions} />
-      )}
+      <TreatmentSessionsDisplay slug={slug} recordId={id} sessions={sessions} />
 
       {/* Recetas */}
       {prescriptions.length > 0 ? (
@@ -809,7 +808,17 @@ function ComplementaryExamsDisplay({ data }: { data: { hematology?: string; bloo
   )
 }
 
-function TreatmentSessionsDisplay({ sessions }: { sessions: TreatmentSessionData[] }) {
+function TreatmentSessionsDisplay({
+  slug,
+  recordId,
+  sessions,
+}: {
+  slug: string
+  recordId: string
+  sessions: TreatmentSessionData[]
+}) {
+  const nextSessionNumber = sessions.length + 1
+
   return (
     <div className="card bg-white border border-gray-100 shadow-sm mx-4 md:mx-0 rounded-3xl overflow-hidden">
       <div className="card-body p-5 md:p-8">
@@ -827,93 +836,112 @@ function TreatmentSessionsDisplay({ sessions }: { sessions: TreatmentSessionData
               </p>
             </div>
           </div>
-          <span className="self-start md:self-center inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700 border border-blue-100">
-            {sessions.length} {sessions.length === 1 ? 'Sesión' : 'Sesiones'}
-          </span>
+          <div className="flex items-center gap-3 self-start md:self-auto flex-wrap">
+            <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700 border border-blue-100">
+              {sessions.length} {sessions.length === 1 ? 'Sesión' : 'Sesiones'}
+            </span>
+            <TreatmentSessionModalButton
+              slug={slug}
+              recordId={recordId}
+              nextSessionNumber={nextSessionNumber}
+            />
+          </div>
         </div>
 
-        {/* Timeline wrapper */}
-        <div className="relative border-l-2 border-blue-100 ml-4 md:ml-8 pl-6 md:pl-8 py-2 space-y-8">
-          {sessions.map((session) => {
-            const formattedDate = session.session_date
-              ? new Date(session.session_date).toLocaleDateString('es-EC', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                })
-              : 'Sin fecha'
+        {sessions.length > 0 ? (
+          /* Timeline wrapper */
+          <div className="relative border-l-2 border-blue-100 ml-4 md:ml-8 pl-6 md:pl-8 py-2 space-y-8">
+            {sessions.map((session) => {
+              const formattedDate = session.session_date
+                ? new Date(session.session_date).toLocaleDateString('es-EC', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })
+                : 'Sin fecha'
 
-            return (
-              <div
-                key={session.id}
-                className="relative group transition-all"
-              >
-                {/* Timeline node badge centered on the vertical line */}
-                <div className="absolute -left-[35px] md:-left-[43px] top-1.5 w-8 h-8 rounded-full bg-blue-600 text-white font-black flex items-center justify-center border-4 border-white shadow-md shadow-blue-200 text-xs select-none">
-                  {session.session_number}
-                </div>
-
-                <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all flex flex-col space-y-4">
-                  {/* Session metadata header */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-gray-50">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-black text-gray-900 uppercase">
-                        Sesión {session.session_number}
-                      </span>
-                      <span className="w-1.5 h-1.5 rounded-full bg-gray-300 hidden sm:inline" />
-                      <span className="text-xs font-bold text-gray-500">{formattedDate}</span>
-                    </div>
-                    {session.signature && (
-                      <span className="self-start sm:self-auto text-[9px] font-black text-blue-600 bg-blue-50/70 border border-blue-100 px-2 py-0.5 rounded-lg uppercase tracking-wider">
-                        Médico: {session.signature}
-                      </span>
-                    )}
+              return (
+                <div
+                  key={session.id}
+                  className="relative group transition-all"
+                >
+                  {/* Timeline node badge centered on the vertical line */}
+                  <div className="absolute -left-[35px] md:-left-[43px] top-1.5 w-8 h-8 rounded-full bg-blue-600 text-white font-black flex items-center justify-center border-4 border-white shadow-md shadow-blue-200 text-xs select-none">
+                    {session.session_number}
                   </div>
 
-                  {/* Timeline fields: highlight what treatment was performed */}
-                  <div className="grid grid-cols-1 gap-4">
-                    {/* TREATMENT performed (Primary highlight) */}
-                    <div className="bg-green-50/30 border-l-4 border-green-500 p-4 rounded-r-xl space-y-1">
-                      <div className="flex items-center gap-1.5 text-[9px] font-black text-green-700 uppercase tracking-widest">
-                        <Activity className="w-3.5 h-3.5" />
-                        Tratamientos / Procedimientos Realizados
+                  <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all flex flex-col space-y-4">
+                    {/* Session metadata header */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-gray-50">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black text-gray-900 uppercase">
+                          Sesión {session.session_number}
+                        </span>
+                        <span className="w-1.5 h-1.5 rounded-full bg-gray-300 hidden sm:inline" />
+                        <span className="text-xs font-bold text-gray-500">{formattedDate}</span>
                       </div>
-                      <p className="text-sm text-gray-800 font-medium whitespace-pre-wrap pl-0.5">
-                        {session.procedures || 'No se registraron procedimientos en esta sesión.'}
-                      </p>
+                      {session.signature && (
+                        <span className="self-start sm:self-auto text-[9px] font-black text-blue-600 bg-blue-50/70 border border-blue-100 px-2 py-0.5 rounded-lg uppercase tracking-wider">
+                          Médico: {session.signature}
+                        </span>
+                      )}
                     </div>
 
-                    {/* DIAGNOSES and complications */}
-                    {session.diagnoses_complications && (
-                      <div className="bg-amber-50/30 border-l-4 border-amber-500 p-4 rounded-r-xl space-y-1">
-                        <div className="flex items-center gap-1.5 text-[9px] font-black text-amber-700 uppercase tracking-widest">
-                          <Stethoscope className="w-3.5 h-3.5" />
-                          Diagnósticos y Complicaciones
+                    {/* Timeline fields: highlight what treatment was performed */}
+                    <div className="grid grid-cols-1 gap-4">
+                      {/* TREATMENT performed (Primary highlight) */}
+                      <div className="bg-green-50/30 border-l-4 border-green-500 p-4 rounded-r-xl space-y-1">
+                        <div className="flex items-center gap-1.5 text-[9px] font-black text-green-700 uppercase tracking-widest">
+                          <Activity className="w-3.5 h-3.5" />
+                          Tratamientos / Procedimientos Realizados
                         </div>
-                        <p className="text-sm text-gray-800 whitespace-pre-wrap pl-0.5">
-                          {session.diagnoses_complications}
+                        <p className="text-sm text-gray-800 font-medium whitespace-pre-wrap pl-0.5">
+                          {session.procedures || 'No se registraron procedimientos en esta sesión.'}
                         </p>
                       </div>
-                    )}
 
-                    {/* PRESCRIPTIONS */}
-                    {session.prescriptions && (
-                      <div className="bg-purple-50/30 border-l-4 border-purple-500 p-4 rounded-r-xl space-y-1">
-                        <div className="flex items-center gap-1.5 text-[9px] font-black text-purple-700 uppercase tracking-widest">
-                          <Pill className="w-3.5 h-3.5" />
-                          Prescripciones / Receta Asociada
+                      {/* DIAGNOSES and complications */}
+                      {session.diagnoses_complications && (
+                        <div className="bg-amber-50/30 border-l-4 border-amber-500 p-4 rounded-r-xl space-y-1">
+                          <div className="flex items-center gap-1.5 text-[9px] font-black text-amber-700 uppercase tracking-widest">
+                            <Stethoscope className="w-3.5 h-3.5" />
+                            Diagnósticos y Complicaciones
+                          </div>
+                          <p className="text-sm text-gray-800 whitespace-pre-wrap pl-0.5">
+                            {session.diagnoses_complications}
+                          </p>
                         </div>
-                        <p className="text-sm text-gray-800 whitespace-pre-wrap pl-0.5">
-                          {session.prescriptions}
-                        </p>
-                      </div>
-                    )}
+                      )}
+
+                      {/* PRESCRIPTIONS */}
+                      {session.prescriptions && (
+                        <div className="bg-purple-50/30 border-l-4 border-purple-500 p-4 rounded-r-xl space-y-1">
+                          <div className="flex items-center gap-1.5 text-[9px] font-black text-purple-700 uppercase tracking-widest">
+                            <Pill className="w-3.5 h-3.5" />
+                            Prescripciones / Receta Asociada
+                          </div>
+                          <p className="text-sm text-gray-800 whitespace-pre-wrap pl-0.5">
+                            {session.prescriptions}
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center p-8 bg-gray-50/40 rounded-[28px] border-2 border-dashed border-gray-200 text-center space-y-3">
+            <ClipboardList className="w-10 h-10 text-gray-400" />
+            <h4 className="text-xs font-black text-gray-700 uppercase tracking-wider">
+              No hay sesiones de tratamiento registradas
+            </h4>
+            <p className="text-[10px] text-gray-500 max-w-sm">
+              Esta línea de tiempo muestra el historial progresivo de visitas del paciente. Hacé clic en **&quot;Registrar Evolución&quot;** para guardar el primer procedimiento de hoy.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )
