@@ -6,6 +6,7 @@ import { Plus, X, Calendar, ClipboardList, Stethoscope, Pill, Save } from 'lucid
 import { addTreatmentSession } from '@/app/(tenant)/[slug]/odontology/actions'
 import CIESearch from './CIESearch'
 import VademecumSearch from './VademecumSearch'
+import InteractiveToothSelector from './InteractiveToothSelector'
 
 interface TreatmentSessionModalButtonProps {
   slug: string
@@ -28,6 +29,8 @@ export default function TreatmentSessionModalButton({
   )
   const [procedures, setProcedures] = useState('')
   const [cieSelection, setCieSelection] = useState<{ code: string; desc: string } | null>(null)
+  const [diagTooth, setDiagTooth] = useState<number | number[] | null>(null)
+  const [diagSurfaces, setDiagSurfaces] = useState<string[]>([])
   const [additionalNotes, setAdditionalNotes] = useState('')
   const [vademecumSelection, setVademecumSelection] = useState<string | null>(null)
   const [prescriptionInstructions, setPrescriptionInstructions] = useState('')
@@ -38,6 +41,8 @@ export default function TreatmentSessionModalButton({
     setSessionDate(new Date().toISOString().split('T')[0])
     setProcedures('')
     setCieSelection(null)
+    setDiagTooth(null)
+    setDiagSurfaces([])
     setAdditionalNotes('')
     setVademecumSelection(null)
     setPrescriptionInstructions('')
@@ -62,9 +67,13 @@ export default function TreatmentSessionModalButton({
       return
     }
 
+    const toothInfo = diagTooth
+      ? `[Pieza ${Array.isArray(diagTooth) ? diagTooth.join(', ') : diagTooth}${diagSurfaces.length > 0 ? ` - Caras: ${diagSurfaces.join(', ')}` : ''}]`
+      : ''
+
     const finalDiagnosis = cieSelection
-      ? `${cieSelection.code} - ${cieSelection.desc}${additionalNotes.trim() ? `. Notas: ${additionalNotes.trim()}` : ''}`
-      : additionalNotes.trim()
+      ? `${cieSelection.code} - ${cieSelection.desc}${toothInfo ? ` ${toothInfo}` : ''}${additionalNotes.trim() ? `. Notas: ${additionalNotes.trim()}` : ''}`
+      : `${toothInfo ? `Diagnóstico en ${toothInfo}. ` : ''}${additionalNotes.trim()}`
 
     const finalPrescription = vademecumSelection
       ? `${vademecumSelection}${prescriptionInstructions.trim() ? `. Indicaciones: ${prescriptionInstructions.trim()}` : ''}`
@@ -198,6 +207,22 @@ export default function TreatmentSessionModalButton({
                     </button>
                   </div>
                 )}
+
+                {/* Anatomía interactiva en el modal */}
+                <div className="p-3 bg-white rounded-xl border border-gray-100 shadow-sm space-y-2">
+                  <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">
+                    Pieza y Caras Afectadas (Opcional)
+                  </label>
+                  <InteractiveToothSelector
+                    initialTooth={diagTooth}
+                    initialSurfaces={diagSurfaces}
+                    onChange={(teeth, surfaces) => {
+                      setDiagTooth(teeth)
+                      setDiagSurfaces(surfaces)
+                    }}
+                  />
+                </div>
+
                 <div className="space-y-1">
                   <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest block ml-1">
                     Complicaciones / Notas adicionales
