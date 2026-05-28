@@ -1,10 +1,12 @@
 import { getDentalRecord, getPrescriptions, getOdontogramTeeth, getTreatmentSessions, DiagnosisData, VitalSignsData, OralHygieneData, StomatognathicData, DentalRecordRow } from '../../actions'
+import { parseSessionFeedbacks } from '../../sessionFeedbacksHelpers'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, Edit, Printer, Activity, FileText, Pill, Calendar, CreditCard, User, Baby, Stethoscope, ClipboardList } from 'lucide-react'
 import OdontogramSVG from '@/components/odontology/OdontogramSVG'
 import PrescriptionModalButton from '@/components/odontology/PrescriptionModalButton'
 import TreatmentSessionModalButton from '@/components/odontology/TreatmentSessionModalButton'
+import SessionFeedbacksSection from '@/components/odontology/SessionFeedbacksSection'
 
 interface Props {
   params: Promise<{ slug: string; id: string }>
@@ -826,6 +828,8 @@ function TreatmentSessionsDisplay({
   const visibleSessions = sortedSessions.slice(0, 3)
   const olderSessions = sortedSessions.slice(3)
 
+  // parseSessionFeedbacks se importa de sessionFeedbacksHelpers.ts
+
   const renderSessionNode = (session: TreatmentSessionData) => {
     const formattedDate = session.session_date
       ? new Date(session.session_date).toLocaleDateString('es-EC', {
@@ -834,6 +838,8 @@ function TreatmentSessionsDisplay({
           year: 'numeric',
         })
       : 'Sin fecha'
+
+    const { cleanDiagnosis, feedbacksList } = parseSessionFeedbacks(session.diagnoses_complications)
 
     return (
       <div
@@ -845,7 +851,7 @@ function TreatmentSessionsDisplay({
           {session.session_number}
         </div>
 
-        <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all flex flex-col space-y-4">
+        <div className="bg-white border border-gray-150 p-5 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all flex flex-col space-y-4">
           {/* Session metadata header */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-gray-50">
             <div className="flex items-center gap-2">
@@ -876,14 +882,14 @@ function TreatmentSessionsDisplay({
             </div>
 
             {/* DIAGNOSES and complications */}
-            {session.diagnoses_complications && (
+            {cleanDiagnosis && (
               <div className="bg-amber-50/30 border-l-4 border-amber-500 p-4 rounded-r-xl space-y-1">
                 <div className="flex items-center gap-1.5 text-[9px] font-black text-amber-700 uppercase tracking-widest">
                   <Stethoscope className="w-3.5 h-3.5" />
                   Diagnósticos y Complicaciones
                 </div>
                 <p className="text-sm text-gray-800 whitespace-pre-wrap pl-0.5">
-                  {session.diagnoses_complications}
+                  {cleanDiagnosis}
                 </p>
               </div>
             )}
@@ -900,6 +906,14 @@ function TreatmentSessionsDisplay({
                 </p>
               </div>
             )}
+
+            {/* Session feedbacks / notes component */}
+            <SessionFeedbacksSection
+              slug={slug}
+              recordId={recordId}
+              sessionId={session.id}
+              initialFeedbacks={feedbacksList}
+            />
           </div>
         </div>
       </div>

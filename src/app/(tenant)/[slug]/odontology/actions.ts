@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { parseSessionFeedbacks, SessionFeedback } from './sessionFeedbacksHelpers'
 
 export interface PatientRow {
   id: string
@@ -705,3 +706,54 @@ export async function saveOdontogramTeeth(
   if (error) return { error: error.message }
   return { success: true }
 }
+
+/* ───────── Feedbacks / Colaboración Médica entre Profesionales ───────── */
+
+export async function addSessionFeedback(
+  slug: string,
+  recordId: string,
+  sessionId: string,
+  authorName: string,
+  text: string
+): Promise<{ error: string } | { success: true }> {
+  const supabase = await createClient()
+  const tenantId = await getTenantId(slug)
+  if (!tenantId) return { error: 'No tienes una clínica activa' }
+
+  // Recuperar sesión actual de Supabase
+  const { data: session, error: fetchError } = await supabase
+    .from('treatment_sessions')
+    .select('diagnoses_complications')
+    .eq('id', sessionId)
+    .single()
+
+  if (fetchError || !session) {
+    return { error: fetchError?.message || 'Sesión de tratamiento no encontrada' }
+  }
+
+  const currentNotes = session.diagnoses_complications || ''
+  const { cleanDiagnosis: baseDiagnosis, feedbacksList: feedbacks } = parseSessionFeedbacks(currentNotes)
+
+  const newFeedback: SessionFeedback = {
+    id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 9),
+    author: authorName.trim(),
+    date: new Date().toISOString(),
+    text: text.trim(),
+  }
+
+  feedbacks.push(newFeedback)
+
+  const updatedDiagnoses = `${baseDiagnosis} [FEEDBACKS: ${JSON.stringify(feedbacks)}]`.trim()
+
+  const { error: updateError } = await supabase
+    .from('treatment_sessions')
+    .update({ diagnoses_complications: updatedDiagnoses })
+    .eq('id', sessionId)
+
+  if (updateError) {
+    return { error: updateError.message }
+  }
+
+  return { success: true }
+}
+
