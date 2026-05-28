@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, Edit, Printer, Activity, FileText, Pill, Calendar, CreditCard, User, Baby, Stethoscope } from 'lucide-react'
 import OdontogramSVG from '@/components/odontology/OdontogramSVG'
+import PrescriptionModalButton from '@/components/odontology/PrescriptionModalButton'
 
 interface Props {
   params: Promise<{ slug: string; id: string }>
@@ -98,7 +99,7 @@ interface DentalRecordData {
   patient_id: string
   consultation_reason: string
   current_problem: { text: string } | string | null
-  diagnosis: DiagnosisData | null
+  diagnosis: DiagnosisData | DiagnosisData[] | null
   vital_signs: VitalSignsData | null
   stomatognathic_exam: StomatognathicData | null
   personal_history: Record<string, boolean | string> | null
@@ -215,6 +216,7 @@ export default async function Form033DetailPage({ params }: Props) {
               Imprimir Receta
             </Link>
           )}
+          <PrescriptionModalButton slug={slug} recordId={id} hasPrescriptions={prescriptions.length > 0} variant="default" />
           <Link
             href={`/${slug}/odontology/form-033/${id}/print`}
             target="_blank"
@@ -357,7 +359,7 @@ export default async function Form033DetailPage({ params }: Props) {
       )}
 
       {/* Recetas */}
-      {prescriptions.length > 0 && (
+      {prescriptions.length > 0 ? (
         <div className="card bg-white border border-gray-100 shadow-sm mx-4 md:mx-0 rounded-3xl">
           <div className="card-body p-5 md:p-8">
             <div className="flex items-center justify-between mb-6">
@@ -365,14 +367,17 @@ export default async function Form033DetailPage({ params }: Props) {
                 <FileText className="w-6 h-6 text-blue-600" />
                 Receta Médica
               </h3>
-              <Link
-                href={`/${slug}/odontology/form-033/${id}/print?type=prescription`}
-                target="_blank"
-                className="btn btn-ghost btn-sm rounded-xl font-bold border-gray-200"
-              >
-                <Printer className="w-4 h-4" />
-                Imprimir Receta
-              </Link>
+              <div className="flex gap-2">
+                <Link
+                  href={`/${slug}/odontology/form-033/${id}/print?type=prescription`}
+                  target="_blank"
+                  className="btn btn-ghost btn-sm rounded-xl font-bold border-gray-200"
+                >
+                  <Printer className="w-4 h-4" />
+                  Imprimir Receta
+                </Link>
+                <PrescriptionModalButton slug={slug} recordId={id} hasPrescriptions={true} variant="icon-only" />
+              </div>
             </div>
             <div className="space-y-4">
               {prescriptions.map((rx) => (
@@ -406,6 +411,23 @@ export default async function Form033DetailPage({ params }: Props) {
             </div>
           </div>
         </div>
+      ) : (
+        <div className="card bg-white border border-gray-100 shadow-sm mx-4 md:mx-0 rounded-3xl">
+          <div className="card-body p-8 text-center space-y-4">
+            <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto">
+              <FileText className="w-8 h-8 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">Receta Médica</h3>
+              <p className="text-sm text-gray-500 max-w-sm mx-auto mt-1">
+                No se han registrado recetas para esta ficha. Creá un recetario con medicamentos, dosis e indicaciones.
+              </p>
+            </div>
+            <div className="pt-2">
+              <PrescriptionModalButton slug={slug} recordId={id} hasPrescriptions={false} variant="cta" />
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Odontograma Preview */}
@@ -428,7 +450,7 @@ export default async function Form033DetailPage({ params }: Props) {
           <div className="overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
             {teeth.length > 0 ? (
               <div className="min-w-[700px] md:min-w-0">
-                <OdontogramSVG teeth={teeth} />
+                <OdontogramSVG teeth={teeth} variant="msp" />
               </div>
             ) : (
               <div className="bg-gray-50 rounded-2xl p-8 text-center border-2 border-dashed border-gray-200">
@@ -461,13 +483,16 @@ export default async function Form033DetailPage({ params }: Props) {
             </Link>
           </>
         ) : (
-          <Link
-            href={`/${slug}/odontology/form-033/${id}/print`}
-            className="flex-1 btn bg-white border-gray-200 rounded-2xl h-14 font-black shadow-xl"
-          >
-            <Printer className="w-5 h-5" />
-            IMPRIMIR
-          </Link>
+          <>
+            <PrescriptionModalButton slug={slug} recordId={id} hasPrescriptions={false} variant="mobile" />
+            <Link
+              href={`/${slug}/odontology/form-033/${id}/print`}
+              className="flex-1 btn bg-white border-gray-200 rounded-2xl h-14 font-black shadow-xl"
+            >
+              <Printer className="w-5 h-5" />
+              IMPRIMIR
+            </Link>
+          </>
         )}
         <Link
           href={`/${slug}/odontology/form-033/${id}/edit`}
@@ -511,32 +536,55 @@ function Section({ title, content }: { title: string; content: string | { text: 
   )
 }
 
-function DiagnosisSection({ content }: { content: DiagnosisData | null }) {
+function DiagnosisSection({ content }: { content: DiagnosisData | DiagnosisData[] | null }) {
   if (!content) return null
 
-  const code = content.code
-  const description = content.description
-  const notes = content.text
-  const type = content.type
+  const items = Array.isArray(content) ? content : [content]
+  if (items.length === 0) return null
 
   return (
-    <div className="pt-4 border-t border-gray-50">
-      <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Diagnóstico (CIE-10)</h3>
-      <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100">
-        {code && (
-          <div className="flex items-center gap-2 mb-3 flex-wrap">
-            <span className="inline-flex items-center rounded-xl bg-blue-600 px-3 py-1 text-xs font-black text-white shadow-sm shadow-blue-200">
-              {code}
-            </span>
-            {type && (
-              <span className="inline-flex items-center rounded-lg bg-gray-200 px-2.5 py-0.5 text-[10px] font-black text-gray-600 uppercase tracking-wider">
-                {type}
-              </span>
-            )}
-            {description && <span className="text-sm font-bold text-gray-700">{description}</span>}
-          </div>
-        )}
-        {notes && <p className="text-sm text-gray-600 whitespace-pre-wrap italic">{notes}</p>}
+    <div className="pt-4 border-t border-gray-50 space-y-4">
+      <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Diagnósticos (Sección 10)</h3>
+      <div className="space-y-3">
+        {items.map((item, index) => {
+          const code = item.code
+          const description = item.description
+          const notes = item.text
+          const type = item.type
+
+          return (
+            <div key={index} className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100 space-y-2">
+              {(code || type || description || item.pieza_dental || (item.caras_afectadas && item.caras_afectadas.length > 0)) && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  {code && (
+                    <span className="inline-flex items-center rounded-xl bg-blue-600 px-3 py-1 text-xs font-black text-white shadow-sm shadow-blue-200">
+                      {code}
+                    </span>
+                  )}
+                  {type && (
+                    <span className="inline-flex items-center rounded-lg bg-gray-200 px-2.5 py-0.5 text-[10px] font-black text-gray-600 uppercase tracking-wider">
+                      {type}
+                    </span>
+                  )}
+                  {description && <span className="text-sm font-bold text-gray-700">{description}</span>}
+                  {item.pieza_dental && (
+                    <span className="inline-flex items-center rounded-lg bg-blue-50 px-2.5 py-0.5 text-[10px] font-black text-blue-700 uppercase tracking-wider border border-blue-100">
+                      {Array.isArray(item.pieza_dental)
+                        ? `Piezas: ${item.pieza_dental.join(', ')}`
+                        : `Pieza ${item.pieza_dental}`}
+                    </span>
+                  )}
+                  {item.caras_afectadas && item.caras_afectadas.length > 0 && (
+                    <span className="inline-flex items-center rounded-lg bg-purple-50 px-2.5 py-0.5 text-[10px] font-black text-purple-700 uppercase tracking-wider border border-purple-100">
+                      Caras: {item.caras_afectadas.join(', ')}
+                    </span>
+                  )}
+                </div>
+              )}
+              {notes && <p className="text-sm text-gray-600 whitespace-pre-wrap italic">{notes}</p>}
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -763,60 +811,110 @@ function ComplementaryExamsDisplay({ data }: { data: { hematology?: string; bloo
 
 function TreatmentSessionsDisplay({ sessions }: { sessions: TreatmentSessionData[] }) {
   return (
-    <div className="card bg-white border border-gray-100 shadow-sm mx-4 md:mx-0 rounded-3xl">
+    <div className="card bg-white border border-gray-100 shadow-sm mx-4 md:mx-0 rounded-3xl overflow-hidden">
       <div className="card-body p-5 md:p-8">
-        <h3 className="text-xl font-black text-gray-900 flex items-center gap-3 mb-6">
-          <Stethoscope className="w-6 h-6 text-blue-600" />
-          Sesiones de Tratamiento
-        </h3>
-        <div className="space-y-4">
-          {sessions.map((session) => (
-            <div
-              key={session.id}
-              className="rounded-2xl border border-gray-100 bg-gray-50/50 p-5 group hover:border-blue-200 transition-all"
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-sm font-black text-blue-600">
-                    {session.session_number}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 pb-4 border-b border-gray-50">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-2xl">
+              <Stethoscope className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight">
+                Línea de Tiempo de Evolución
+              </h3>
+              <p className="text-[10px] text-gray-400 font-bold uppercase mt-0.5 tracking-wider">
+                Registro secuencial de sesiones y tratamientos ejecutados
+              </p>
+            </div>
+          </div>
+          <span className="self-start md:self-center inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700 border border-blue-100">
+            {sessions.length} {sessions.length === 1 ? 'Sesión' : 'Sesiones'}
+          </span>
+        </div>
+
+        {/* Timeline wrapper */}
+        <div className="relative border-l-2 border-blue-100 ml-4 md:ml-8 pl-6 md:pl-8 py-2 space-y-8">
+          {sessions.map((session) => {
+            const formattedDate = session.session_date
+              ? new Date(session.session_date).toLocaleDateString('es-EC', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                })
+              : 'Sin fecha'
+
+            return (
+              <div
+                key={session.id}
+                className="relative group transition-all"
+              >
+                {/* Timeline node badge centered on the vertical line */}
+                <div className="absolute -left-[35px] md:-left-[43px] top-1.5 w-8 h-8 rounded-full bg-blue-600 text-white font-black flex items-center justify-center border-4 border-white shadow-md shadow-blue-200 text-xs select-none">
+                  {session.session_number}
+                </div>
+
+                <div className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm hover:shadow-md hover:border-blue-200 transition-all flex flex-col space-y-4">
+                  {/* Session metadata header */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-gray-50">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-gray-900 uppercase">
+                        Sesión {session.session_number}
+                      </span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-gray-300 hidden sm:inline" />
+                      <span className="text-xs font-bold text-gray-500">{formattedDate}</span>
+                    </div>
+                    {session.signature && (
+                      <span className="self-start sm:self-auto text-[9px] font-black text-blue-600 bg-blue-50/70 border border-blue-100 px-2 py-0.5 rounded-lg uppercase tracking-wider">
+                        Médico: {session.signature}
+                      </span>
+                    )}
                   </div>
-                  <div>
-                    <p className="text-sm font-black text-gray-900">Sesión {session.session_number}</p>
-                    {session.session_date && (
-                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                        {new Date(session.session_date).toLocaleDateString('es-EC')}
+
+                  {/* Timeline fields: highlight what treatment was performed */}
+                  <div className="grid grid-cols-1 gap-4">
+                    {/* TREATMENT performed (Primary highlight) */}
+                    <div className="bg-green-50/30 border-l-4 border-green-500 p-4 rounded-r-xl space-y-1">
+                      <div className="flex items-center gap-1.5 text-[9px] font-black text-green-700 uppercase tracking-widest">
+                        <Activity className="w-3.5 h-3.5" />
+                        Tratamientos / Procedimientos Realizados
+                      </div>
+                      <p className="text-sm text-gray-800 font-medium whitespace-pre-wrap pl-0.5">
+                        {session.procedures || 'No se registraron procedimientos en esta sesión.'}
                       </p>
+                    </div>
+
+                    {/* DIAGNOSES and complications */}
+                    {session.diagnoses_complications && (
+                      <div className="bg-amber-50/30 border-l-4 border-amber-500 p-4 rounded-r-xl space-y-1">
+                        <div className="flex items-center gap-1.5 text-[9px] font-black text-amber-700 uppercase tracking-widest">
+                          <Stethoscope className="w-3.5 h-3.5" />
+                          Diagnósticos y Complicaciones
+                        </div>
+                        <p className="text-sm text-gray-800 whitespace-pre-wrap pl-0.5">
+                          {session.diagnoses_complications}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* PRESCRIPTIONS */}
+                    {session.prescriptions && (
+                      <div className="bg-purple-50/30 border-l-4 border-purple-500 p-4 rounded-r-xl space-y-1">
+                        <div className="flex items-center gap-1.5 text-[9px] font-black text-purple-700 uppercase tracking-widest">
+                          <Pill className="w-3.5 h-3.5" />
+                          Prescripciones / Receta Asociada
+                        </div>
+                        <p className="text-sm text-gray-800 whitespace-pre-wrap pl-0.5">
+                          {session.prescriptions}
+                        </p>
+                      </div>
                     )}
                   </div>
                 </div>
-                {session.signature && (
-                  <span className="text-xs text-gray-400 italic">Firma: {session.signature}</span>
-                )}
               </div>
-              <div className="space-y-2">
-                {session.diagnoses_complications && (
-                  <SessionField label="Diagnósticos y complicaciones" text={session.diagnoses_complications} />
-                )}
-                {session.procedures && (
-                  <SessionField label="Procedimientos" text={session.procedures} />
-                )}
-                {session.prescriptions && (
-                  <SessionField label="Prescripciones" text={session.prescriptions} />
-                )}
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
-    </div>
-  )
-}
-
-function SessionField({ label, text }: { label: string; text: string }) {
-  return (
-    <div className="bg-white rounded-xl p-3 border border-gray-100">
-      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{label}</p>
-      <p className="text-sm text-gray-700 whitespace-pre-wrap">{text}</p>
     </div>
   )
 }
