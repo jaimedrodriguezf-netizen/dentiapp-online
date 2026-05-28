@@ -120,21 +120,19 @@ describe('Form033Wizard E2E / Flow Integration Tests', () => {
     fireEvent.change(problemInput, { target: { value: 'Dolor agudo e inflamación en pieza 36.' } })
 
     // Paso 3: Odontograma - marcar solo la pieza afectada (pieza 36)
-    const tooth36Cell = screen.getByText('36').closest('g')
+    const tooth36Cell = screen.getAllByText('36').find(el => el.tagName.toLowerCase() === 'text')?.closest('g')
     expect(tooth36Cell).toBeInTheDocument()
     fireEvent.click(tooth36Cell!)
 
-    // En el panel de edición, seleccionar "Caries"
-    const cariesBtn = screen.getByRole('button', { name: /Caries/i })
+    // En el panel de edición, seleccionar la cara Oclusal (O) y luego "Caries"
+    const oclusalFace = screen.getByTestId('big-tooth-face-O')
+    expect(oclusalFace).toBeInTheDocument()
+    fireEvent.click(oclusalFace)
+
+    const cariesBtn = screen.getByRole('button', { name: /^Caries$/i })
     expect(cariesBtn).toBeInTheDocument()
     fireEvent.click(cariesBtn)
 
-    // Paso 4: Diagnóstico CIE-10 (Caries)
-    const cieSearchInput = screen.getByPlaceholderText(/Buscá un diagnóstico CIE-10/i) as HTMLInputElement
-    fireEvent.change(cieSearchInput, { target: { value: 'caries' } })
-
-    const option = await screen.findByText('K02.1')
-    fireEvent.click(option)
 
     // Guardar
     const saveBtns = screen.getAllByRole('button', { name: /Guardar Todo/i })
@@ -155,7 +153,7 @@ describe('Form033Wizard E2E / Flow Integration Tests', () => {
     // Verificar que la pieza 36 está guardada con caries
     const parsedTeeth = JSON.parse(submittedData.get('odontogram_teeth') as string)
     expect(parsedTeeth).toHaveLength(1)
-    expect(parsedTeeth[0]).toEqual({
+    expect(parsedTeeth[0]).toMatchObject({
       tooth_number: 36,
       status: 'caries'
     })
@@ -268,5 +266,96 @@ describe('Form033Wizard E2E / Flow Integration Tests', () => {
     expect(submittedRx[0].medication_name).toBe('Ibuprofeno')
     expect(submittedRx[1].medication_name).toBe('Amoxicilina')
   })
+
+  it('Flujo 5: Parámetros Obligatorios y Validación de Diagnósticos (Sección 10/11)', async () => {
+    mockCreateAction.mockClear()
+    render(
+      <Form033Wizard
+        slug="dentiapp"
+        patientId="pat-123"
+        patientName="Juan Pérez"
+        createAction={mockCreateAction}
+      />
+    )
+
+    // 2. Forzá el error de validación:
+    const addDiagBtn = screen.getByRole('button', { name: /Añadir Diagnóstico a la Lista/i })
+    expect(addDiagBtn).toBeInTheDocument()
+    fireEvent.click(addDiagBtn)
+
+    // Resultado esperado: los campos muestran que son requeridos.
+    const validationAlert = screen.getByText(/Falta el código CIE-10. Buscá y seleccioná un diagnóstico válido/i)
+    expect(validationAlert).toBeInTheDocument()
+
+    // 3. Completá el diagnóstico por partes:
+    const cieSearchInput = screen.getByPlaceholderText(/Buscá un diagnóstico CIE-10/i) as HTMLInputElement
+    fireEvent.change(cieSearchInput, { target: { value: 'caries' } })
+
+    const option = await screen.findByText('K02.1')
+    fireEvent.click(option)
+
+    // Seleccionar Tipo
+    const typeSelect = screen.getAllByRole('combobox').find(el => el.innerHTML.includes('presuntivo')) as HTMLSelectElement
+    expect(typeSelect).toBeInTheDocument()
+    fireEvent.change(typeSelect, { target: { value: 'definitivo' } })
+
+    // Seleccionar pieza 46
+    const tooth46Cell = screen.getByRole('button', { name: /^46$/i })
+    expect(tooth46Cell).toBeInTheDocument()
+    fireEvent.click(tooth46Cell)
+
+    // Marcar caras O (Oclusal/Incisal) y M (Mesial).
+    // Para la pieza 46 (lado derecho), Mesial es la derecha (rightKey = 'M').
+    const surfaceO = screen.getByText(/O\/I \(Oclusal/i)
+    const surfaceM = screen.getByText(/M \(Mesial \(M\)/i)
+    fireEvent.click(surfaceO)
+    fireEvent.click(surfaceM)
+
+    // Dejar comentario clínico vacío y presionar Añadir
+    fireEvent.click(addDiagBtn)
+
+    // Resultado esperado: destaca Comentario clínico en rojo indicando que falta
+    const notesAlert = screen.getByText(/Falta el Comentario Clínico. Escribí una nota u observación obligatoria/i)
+    expect(notesAlert).toBeInTheDocument()
+
+    // Escribir nota
+    const notesInput = screen.getByPlaceholderText(/Ej: Afecta profundamente el esmalte/i) as HTMLInputElement
+    fireEvent.change(notesInput, { target: { value: 'Afectación moderada, requiere restauración' } })
+
+    // 4. Agregar a la lista
+    fireEvent.click(addDiagBtn)
+
+    // Ver si se limpió el panel y se añadió abajo
+    expect(screen.getByText('Afectación moderada, requiere restauración')).toBeInTheDocument()
+
+    // 5. Interceptor de olvidos:
+    const activeCieSearchInput = screen.getByPlaceholderText(/Buscá un diagnóstico CIE-10/i) as HTMLInputElement
+    fireEvent.change(activeCieSearchInput, { target: { value: 'gingivitis' } })
+    const optionGingivitis = await screen.findByText('K05.0')
+    const optionButton = optionGingivitis.closest('button')
+    expect(optionButton).toBeInTheDocument()
+    fireEvent.click(optionButton!)
+
+    // Esperar a que el estado se actualice y aparezca el botón Remover del chip
+    const removeBtn = await screen.findByText('Remover')
+    expect(removeBtn).toBeInTheDocument()
+
+    // Intentar guardar la ficha general
+    const saveBtns = screen.getAllByRole('button', { name: /Guardar Todo/i })
+    fireEvent.click(saveBtns[0])
+
+    // Cancelado, muestra advertencia de diagnóstico a medio completar
+    expect(mockCreateAction).not.toHaveBeenCalled()
+    const interceptorAlert = screen.getByText(/¡Tenés un diagnóstico a medio completar en el panel!/i)
+    expect(interceptorAlert).toBeInTheDocument()
+
+    // 6. Finalizar guardado:
+    fireEvent.click(removeBtn)
+
+    // Guardar con éxito
+    fireEvent.click(saveBtns[0])
+    expect(mockCreateAction).toHaveBeenCalled()
+  })
 })
+
 

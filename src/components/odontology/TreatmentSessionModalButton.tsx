@@ -4,6 +4,8 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, X, Calendar, ClipboardList, Stethoscope, Pill, Save } from 'lucide-react'
 import { addTreatmentSession } from '@/app/(tenant)/[slug]/odontology/actions'
+import CIESearch from './CIESearch'
+import VademecumSearch from './VademecumSearch'
 
 interface TreatmentSessionModalButtonProps {
   slug: string
@@ -25,16 +27,20 @@ export default function TreatmentSessionModalButton({
     new Date().toISOString().split('T')[0]
   )
   const [procedures, setProcedures] = useState('')
-  const [diagnosesComplications, setDiagnosesComplications] = useState('')
-  const [prescriptions, setPrescriptions] = useState('')
+  const [cieSelection, setCieSelection] = useState<{ code: string; desc: string } | null>(null)
+  const [additionalNotes, setAdditionalNotes] = useState('')
+  const [vademecumSelection, setVademecumSelection] = useState<string | null>(null)
+  const [prescriptionInstructions, setPrescriptionInstructions] = useState('')
   const [signature, setSignature] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
 
   const handleOpen = () => {
     setSessionDate(new Date().toISOString().split('T')[0])
     setProcedures('')
-    setDiagnosesComplications('')
-    setPrescriptions('')
+    setCieSelection(null)
+    setAdditionalNotes('')
+    setVademecumSelection(null)
+    setPrescriptionInstructions('')
     setSignature('')
     setErrorMessage('')
     setIsOpen(true)
@@ -56,13 +62,21 @@ export default function TreatmentSessionModalButton({
       return
     }
 
+    const finalDiagnosis = cieSelection
+      ? `${cieSelection.code} - ${cieSelection.desc}${additionalNotes.trim() ? `. Notas: ${additionalNotes.trim()}` : ''}`
+      : additionalNotes.trim()
+
+    const finalPrescription = vademecumSelection
+      ? `${vademecumSelection}${prescriptionInstructions.trim() ? `. Indicaciones: ${prescriptionInstructions.trim()}` : ''}`
+      : prescriptionInstructions.trim()
+
     startTransition(async () => {
       const res = await addTreatmentSession(slug, recordId, {
         session_number: nextSessionNumber,
         session_date: sessionDate,
         procedures: procedures.trim(),
-        diagnoses_complications: diagnosesComplications.trim(),
-        prescriptions: prescriptions.trim(),
+        diagnoses_complications: finalDiagnosis,
+        prescriptions: finalPrescription,
         signature: signature.trim(),
       })
 
@@ -159,36 +173,84 @@ export default function TreatmentSessionModalButton({
                 />
               </div>
 
-              {/* Diagnoses and complications */}
-              <div className="space-y-1.5">
-                <label className="flex items-center gap-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
-                  <Stethoscope className="w-3.5 h-3.5 text-gray-400" />
-                  Diagnósticos y Complicaciones (Opcional)
+              {/* Diagnósticos y Complicaciones (CIE-10) */}
+              <div className="space-y-2 bg-gray-50/40 p-4 rounded-[20px] border border-gray-100 shadow-sm">
+                <label className="flex items-center gap-1.5 text-[10px] font-black text-gray-500 uppercase tracking-widest block">
+                  <Stethoscope className="w-3.5 h-3.5 text-blue-500" />
+                  Diagnóstico Clínico (CIE-10)
                 </label>
-                <textarea
-                  value={diagnosesComplications}
-                  onChange={(e) => setDiagnosesComplications(e.target.value)}
-                  placeholder="Ej: Paciente presenta ligera sensibilidad al frío en cuadrante inferior derecho..."
-                  rows={2}
-                  disabled={isPending}
-                  className="w-full rounded-xl border-2 border-gray-100 bg-gray-50/30 px-4 py-2.5 text-xs font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none transition-all"
+                <CIESearch
+                  onSelect={(code, desc) => setCieSelection({ code, desc })}
+                  onClear={() => setCieSelection(null)}
                 />
+                {cieSelection && (
+                  <div className="p-3 bg-blue-50/70 rounded-xl border border-blue-100 flex items-center justify-between animate-in fade-in slide-in-from-top-1">
+                    <div className="min-w-0 pr-2">
+                      <span className="text-[9px] font-black text-blue-600 block uppercase">Código Seleccionado:</span>
+                      <span className="text-xs font-bold text-blue-950 block truncate">{cieSelection.code} - {cieSelection.desc}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setCieSelection(null)}
+                      className="text-[9px] font-black text-red-500 hover:text-red-700 uppercase tracking-wider cursor-pointer shrink-0"
+                    >
+                      Remover
+                    </button>
+                  </div>
+                )}
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest block ml-1">
+                    Complicaciones / Notas adicionales
+                  </label>
+                  <textarea
+                    value={additionalNotes}
+                    onChange={(e) => setAdditionalNotes(e.target.value)}
+                    placeholder="Ej: Paciente presenta ligera sensibilidad al frío..."
+                    rows={2}
+                    disabled={isPending}
+                    className="w-full rounded-xl border-2 border-gray-100 bg-white px-4 py-2 text-xs font-bold text-gray-900 focus:border-blue-500 focus:outline-none transition-all"
+                  />
+                </div>
               </div>
 
-              {/* Prescriptions */}
-              <div className="space-y-1.5">
-                <label className="flex items-center gap-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">
-                  <Pill className="w-3.5 h-3.5 text-gray-400" />
-                  Recetas / Medicación Prescrita (Opcional)
+              {/* Recetas / Medicación (Vademécum) */}
+              <div className="space-y-2 bg-gray-50/40 p-4 rounded-[20px] border border-gray-100 shadow-sm">
+                <label className="flex items-center gap-1.5 text-[10px] font-black text-gray-500 uppercase tracking-widest block">
+                  <Pill className="w-3.5 h-3.5 text-purple-500" />
+                  Prescripciones / Vademécum
                 </label>
-                <input
-                  type="text"
-                  value={prescriptions}
-                  onChange={(e) => setPrescriptions(e.target.value)}
-                  placeholder="Ej: Ibuprofeno 600mg cada 8 horas por 3 días."
-                  disabled={isPending}
-                  className="w-full rounded-xl border-2 border-gray-100 bg-gray-50/30 px-4 py-2.5 text-xs font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none transition-all"
+                <VademecumSearch
+                  onSelect={(_, name) => setVademecumSelection(name)}
+                  defaultValue={vademecumSelection || undefined}
                 />
+                {vademecumSelection && (
+                  <div className="p-3 bg-purple-50/70 rounded-xl border border-purple-100 flex items-center justify-between animate-in fade-in slide-in-from-top-1">
+                    <div className="min-w-0 pr-2">
+                      <span className="text-[9px] font-black text-purple-600 block uppercase">Medicación Seleccionada:</span>
+                      <span className="text-xs font-bold text-purple-950 block truncate">{vademecumSelection}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setVademecumSelection(null)}
+                      className="text-[9px] font-black text-red-500 hover:text-red-700 uppercase tracking-wider cursor-pointer shrink-0"
+                    >
+                      Remover
+                    </button>
+                  </div>
+                )}
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest block ml-1">
+                    Indicaciones de Dosificación
+                  </label>
+                  <input
+                    type="text"
+                    value={prescriptionInstructions}
+                    onChange={(e) => setPrescriptionInstructions(e.target.value)}
+                    placeholder="Ej: Ibuprofeno 600mg cada 8 horas por 3 días."
+                    disabled={isPending}
+                    className="w-full rounded-xl border-2 border-gray-100 bg-white px-4 py-2.5 text-xs font-bold text-gray-900 focus:border-blue-500 focus:outline-none transition-all"
+                  />
+                </div>
               </div>
 
               {/* Signature / Doctor Name */}

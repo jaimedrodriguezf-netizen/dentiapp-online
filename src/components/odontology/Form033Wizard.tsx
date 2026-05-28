@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import {
   Save,
   ClipboardList, Stethoscope, Heart, Activity, FileText,
@@ -18,7 +18,17 @@ import {
   OralHygieneFields, FluorosisField, MalocclusionFields,
   StomatognathicFields, IndiceField
 } from './OralExamSection'
+import { isDeciduous } from './OdontogramSVG'
 import { motion, AnimatePresence } from 'framer-motion'
+import InteractiveToothSelector from './InteractiveToothSelector'
+import DiagnosesListManager from './DiagnosesListManager'
+
+const FDI_TEETH = [
+  18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28,
+  55, 54, 53, 52, 51, 61, 62, 63, 64, 65,
+  85, 84, 83, 82, 81, 71, 72, 73, 74, 75,
+  48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38
+]
 
 const SECTIONS = [
   { id: 'patient', label: 'Motivo y Enfermedad', icon: User },
@@ -126,6 +136,7 @@ interface Props {
   createAction: (fd: globalThis.FormData) => Promise<void>
   patientId?: string
   patientName?: string
+  patientGender?: string | null
   defaultPersonalHistory?: PersonalHistoryData
   defaultFamilyHistory?: FamilyHistoryData
   defaultVitalSigns?: VitalSignsData
@@ -138,11 +149,59 @@ export default function Form033Wizard({
   defaultVitalSigns,
   patientId,
   patientName,
+  patientGender,
 }: Props) {
   const [saving, setSaving] = useState(false)
   const [activeSection, setActiveSection] = useState('patient')
   const [teeth, setTeeth] = useState<ToothData[]>([])
   const [prescriptions, setPrescriptions] = useState<PrescriptionItem[]>([])
+  const [pregnant, setPregnant] = useState<string>('false')
+
+  useEffect(() => {
+    if (patientGender?.toLowerCase().startsWith('m')) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPregnant('false')
+    }
+  }, [patientGender])
+
+  const calculatedIndices = useMemo(() => {
+    const cpod = { caries: 0, missing: 0, filled: 0, total: 0 }
+    const ceod = { caries: 0, missing: 0, filled: 0, total: 0 }
+
+    teeth.forEach((tooth) => {
+      const isDec = isDeciduous(tooth.tooth_number)
+
+      let hasCaries = false
+      let isMissing = false
+      let isFilled = false
+
+      if (tooth.surfaces) {
+        const surfaceStatuses = Object.values(tooth.surfaces)
+        hasCaries = surfaceStatuses.includes('caries')
+        isFilled = surfaceStatuses.includes('filling')
+        isMissing = tooth.status === 'extraction_done' || tooth.status === 'extraction_indicated'
+      } else {
+        hasCaries = tooth.status === 'caries'
+        isFilled = tooth.status === 'filling'
+        isMissing = tooth.status === 'extraction_done' || tooth.status === 'extraction_indicated'
+      }
+
+      if (isDec) {
+        if (hasCaries) ceod.caries++
+        if (tooth.status === 'extraction_indicated' || tooth.status === 'extraction_done') ceod.missing++
+        if (isFilled) ceod.filled++
+      } else {
+        if (hasCaries) cpod.caries++
+        if (tooth.status === 'extraction_done' || tooth.status === 'extraction_indicated') cpod.missing++
+        if (isFilled) cpod.filled++
+      }
+    })
+
+    cpod.total = cpod.caries + cpod.missing + cpod.filled
+    ceod.total = ceod.caries + ceod.missing + ceod.filled
+
+    return { cpod, ceod }
+  }, [teeth])
 
   function createEmptyPrescription(): PrescriptionItem {
     return {
@@ -183,6 +242,7 @@ export default function Form033Wizard({
   
   // Ref for the form to use native FormData on submission
   const formRef = useRef<HTMLFormElement>(null)
+  const isProgrammaticSubmit = useRef(false)
 
   // Use IntersectionObserver instead of scroll event listener
   useEffect(() => {
@@ -206,7 +266,26 @@ export default function Form033Wizard({
   }, [])
 
   async function handleFormSubmission(e?: React.FormEvent) {
+    if (isProgrammaticSubmit.current) {
+      return
+    }
+
     if (e) e.preventDefault()
+    
+    if (!e || e.type !== 'submit') {
+      if (formRef.current) {
+        isProgrammaticSubmit.current = true
+        const submitEvent = new Event('submit', { cancelable: true, bubbles: true })
+        formRef.current.dispatchEvent(submitEvent)
+        isProgrammaticSubmit.current = false
+        if (submitEvent.defaultPrevented) {
+          return
+        }
+      }
+    } else if (e && e.defaultPrevented) {
+      return
+    }
+
     if (!formRef.current) return
     setSaving(true)
     
@@ -318,18 +397,31 @@ export default function Form033Wizard({
                 <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
                   <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 block">¿Paciente embarazada?</label>
                   <div className="flex gap-4">
-                    {['true', 'false'].map((v) => (
-                      <label key={v} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="pregnant"
-                          value={v}
-                          className="radio radio-primary radio-sm"
-                        />
-                        <span className="text-sm font-bold text-gray-700">{v === 'true' ? 'Sí' : 'No'}</span>
-                      </label>
-                    ))}
+                    {['true', 'false'].map((v) => {
+                      const isMale = patientGender?.toLowerCase().startsWith('m')
+                      return (
+                        <label key={v} className={`flex items-center gap-2 cursor-pointer ${isMale ? 'opacity-50' : ''}`}>
+                          <input
+                            type="radio"
+                            name="pregnant"
+                            value={v}
+                            checked={pregnant === v}
+                            onChange={(e) => {
+                              if (!isMale) setPregnant(e.target.value)
+                            }}
+                            disabled={isMale}
+                            className="radio radio-primary radio-sm"
+                          />
+                          <span className="text-sm font-bold text-gray-700">{v === 'true' ? 'Sí' : 'No'}</span>
+                        </label>
+                      )
+                    })}
                   </div>
+                  {patientGender?.toLowerCase().startsWith('m') && (
+                    <span className="text-[10px] text-gray-400 font-bold uppercase mt-1 block">
+                      No aplica (Paciente Masculino)
+                    </span>
+                  )}
                 </div>
               </div>
               <FieldGroup label="Enfermedad o Problema Actual">
@@ -411,10 +503,10 @@ export default function Form033Wizard({
               </div>
               <div className="grid grid-cols-1 gap-6">
                 <SubSection title="CPO-D (Permanente)">
-                  <IndiceField prefix="cpod" />
+                  <IndiceField prefix="cpod" values={calculatedIndices.cpod} readOnly />
                 </SubSection>
                 <SubSection title="ceo-d (Decidua)">
-                  <IndiceField prefix="ceod" />
+                  <IndiceField prefix="ceod" values={calculatedIndices.ceod} readOnly />
                 </SubSection>
               </div>
             </div>
@@ -431,31 +523,8 @@ export default function Form033Wizard({
           {/* SECTION: Diagnóstico */}
           <section id="diagnostico" className="scroll-mt-24 space-y-6">
             <SectionHeader icon={Stethoscope} title="11. Diagnóstico (CIE-10)" />
-            <div className="bg-white border border-gray-100 rounded-[32px] p-6 md:p-8 shadow-sm space-y-6">
-              <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
-                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 block">Buscar código o descripción</label>
-                <DiagnosisSelector />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <FieldGroup label="Tipo de diagnóstico">
-                    <select
-                      name="diagnosis_type"
-                      className="w-full rounded-xl border-2 border-gray-100 bg-gray-50/30 px-4 py-3 text-sm font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none transition-all"
-                    >
-                      <option value="">Seleccioná...</option>
-                      <option value="presuntivo">Presuntivo</option>
-                      <option value="definitivo">Definitivo</option>
-                    </select>
-                 </FieldGroup>
-                 <FieldGroup label="Notas clínicas">
-                  <textarea
-                    name="diagnosis_notes"
-                    placeholder="Observaciones adicionales..."
-                    className="w-full rounded-xl border-2 border-gray-100 bg-gray-50/30 px-4 py-3 text-sm font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none transition-all"
-                    rows={1}
-                  />
-                </FieldGroup>
-              </div>
+            <div className="bg-white border border-gray-100 rounded-[32px] p-6 md:p-8 shadow-sm">
+              <DiagnosesListManager />
             </div>
           </section>
 

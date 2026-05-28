@@ -77,21 +77,12 @@ export default function DiagnosesListManager({
         )
         setShowValidationErrors(true)
         const managerEl = inputEl?.closest('.space-y-8')
-        managerEl?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        if (managerEl && typeof managerEl.scrollIntoView === 'function') {
+          managerEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
         return
       }
 
-      if (diagnoses.length === 0) {
-        event.preventDefault()
-        event.stopPropagation()
-        setValidationError(
-          '¡Debés agregar al menos un diagnóstico completo a la lista antes de poder guardar la ficha clínica!'
-        )
-        setShowValidationErrors(true)
-        const managerEl = inputEl?.closest('.space-y-8')
-        managerEl?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        return
-      }
     }
 
     form.addEventListener('submit', handleFormSubmit)
@@ -223,6 +214,7 @@ export default function DiagnosesListManager({
             )}
           </div>
           <CIESearch
+            key={diagnoses.length}
             onSelect={(code, desc) => setCieSelection({ code, desc })}
           />
           {cieSelection.code && (
