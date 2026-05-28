@@ -327,7 +327,7 @@ export default async function Form033DetailPage({ params }: Props) {
           {/* I + J: Salud Bucal e Índices */}
           {(record.oral_hygiene || record.periodontal_disease || record.fluorosis || record.malocclusion || record.cpod_index || record.ceod_index) && (
             <OralHealthView
-              oralHygiene={record.oral_hygiene as { rating?: string; plaque_index?: number } | null}
+              oralHygiene={record.oral_hygiene as OralHygieneData | null}
               periodontalDisease={record.periodontal_disease as string | null}
               fluorosis={record.fluorosis as string | null}
               malocclusion={record.malocclusion as string | null}
@@ -667,7 +667,7 @@ function OralHealthView({
   cpod,
   ceod,
 }: {
-  oralHygiene: { rating?: string; plaque_index?: number } | null
+  oralHygiene: OralHygieneData | null
   periodontalDisease: string | null
   fluorosis: string | null
   malocclusion: string | null
@@ -697,6 +697,73 @@ function OralHealthView({
     try { malocclusionParsed = JSON.parse(malocclusion) } catch {}
   }
 
+  const upperTeeth = [18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28]
+  const lowerTeeth = [48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38]
+  
+  const hasOlearyData = oralHygiene?.oleary_data && Object.keys(oralHygiene.oleary_data).length > 0
+
+  const renderOlearyTooth = (toothNumber: number) => {
+    const toothState = oralHygiene?.oleary_data?.[toothNumber] || {
+      absent: false,
+      surfaces: { V: false, L: false, M: false, D: false }
+    }
+    const isAbsent = toothState.absent
+    const surfaces = toothState.surfaces || { V: false, L: false, M: false, D: false }
+
+    return (
+      <div key={toothNumber} className="flex flex-col items-center gap-1.5 p-1.5 bg-gray-50/50 rounded-xl border border-gray-100 min-w-[44px] select-none">
+        <span className="text-[9px] font-black text-gray-500">{toothNumber}</span>
+        <div className={`relative w-8 h-8 rounded-full overflow-hidden border border-gray-200 transition-all ${isAbsent ? 'opacity-30 bg-gray-100 pointer-events-none' : 'bg-white'}`}>
+          <svg viewBox="0 0 40 40" className="w-full h-full">
+            <defs>
+              <clipPath id={`clip-view-${toothNumber}`}>
+                <circle cx="20" cy="20" r="20" />
+              </clipPath>
+            </defs>
+            <g clipPath={`url(#clip-view-${toothNumber})`}>
+              {/* Vestibular (V) - Superior */}
+              <path
+                d="M 20 20 L 0 0 L 40 0 Z"
+                fill={surfaces.V ? '#ef4444' : '#ffffff'}
+                stroke="#e5e7eb"
+                strokeWidth="0.75"
+              />
+              {/* Distal (D) - Derecho */}
+              <path
+                d="M 20 20 L 40 0 L 40 40 Z"
+                fill={surfaces.D ? '#ef4444' : '#ffffff'}
+                stroke="#e5e7eb"
+                strokeWidth="0.75"
+              />
+              {/* Lingual/Palatino (L) - Inferior */}
+              <path
+                d="M 20 20 L 40 40 L 0 40 Z"
+                fill={surfaces.L ? '#ef4444' : '#ffffff'}
+                stroke="#e5e7eb"
+                strokeWidth="0.75"
+              />
+              {/* Mesial (M) - Izquierdo */}
+              <path
+                d="M 20 20 L 0 40 L 0 0 Z"
+                fill={surfaces.M ? '#ef4444' : '#ffffff'}
+                stroke="#e5e7eb"
+                strokeWidth="0.75"
+              />
+              {/* Division lines */}
+              <line x1="0" y1="0" x2="40" y2="40" stroke="#d1d5db" strokeWidth="0.75" />
+              <line x1="40" y1="0" x2="0" y2="40" stroke="#d1d5db" strokeWidth="0.75" />
+              {/* Center dot */}
+              <circle cx="20" cy="20" r="4" fill="#f3f4f6" stroke="#d1d5db" strokeWidth="0.75" />
+            </g>
+          </svg>
+        </div>
+        <span className={`text-[7px] font-black uppercase px-0.5 rounded leading-none ${isAbsent ? 'bg-gray-100 text-gray-400' : 'bg-green-50 text-green-700'}`}>
+          {isAbsent ? 'Aus' : 'Pres'}
+        </span>
+      </div>
+    )
+  }
+
   return (
     <div className="pt-4 border-t border-gray-50 space-y-4">
       <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Salud Bucal e Índices</h3>
@@ -714,6 +781,36 @@ function OralHealthView({
           <InfoCard label="Fluorosis" value={fluorosisLabels[fluorosis] || fluorosis} />
         )}
       </div>
+
+      {/* Renderizado estático del Diagrama de O'Leary */}
+      {hasOlearyData && (
+        <div className="bg-gray-50/30 rounded-2xl p-4 border border-gray-100 space-y-4">
+          <div className="flex items-center justify-between border-b border-gray-100/50 pb-2">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Diagrama Clínico de O&apos;Leary</h4>
+            </div>
+            <span className="text-[9px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-wider">
+              Índice de Placa: {oralHygiene.plaque_index}%
+            </span>
+          </div>
+
+          <div className="overflow-x-auto pb-2 scrollbar-thin">
+            <div className="flex flex-col gap-3 min-w-[760px] p-2 bg-white rounded-2xl border border-gray-100/80 shadow-2xs">
+              {/* Arcada Superior */}
+              <div className="flex justify-between items-center gap-1">
+                {upperTeeth.map(renderOlearyTooth)}
+              </div>
+              <div className="h-px bg-dashed border-t border-gray-100" />
+              {/* Arcada Inferior */}
+              <div className="flex justify-between items-center gap-1">
+                {lowerTeeth.map(renderOlearyTooth)}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {malocclusionParsed && (
         <div className="bg-gray-50/50 rounded-2xl p-4 border border-gray-100">
           <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Maloclusión</h4>
