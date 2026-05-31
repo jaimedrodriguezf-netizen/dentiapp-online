@@ -13,6 +13,7 @@ import {
   Shield,
   LucideIcon,
   Crown,
+  ClipboardList,
 } from 'lucide-react'
 import { Tooth as ToothIcon } from '@/components/ui/ToothIcon'
 import { APP_VERSION } from '@/lib/version'
@@ -62,6 +63,12 @@ const menuItems: MenuItem[] = [
     href: '/odontology', 
     label: 'Odontología', 
     icon: ToothIcon, 
+    permissionKey: 'view_odontology' 
+  },
+  { 
+    href: '/odontology/periodontogram', 
+    label: 'Periodontograma', 
+    icon: ClipboardList, 
     permissionKey: 'view_odontology' 
   },
   { 
