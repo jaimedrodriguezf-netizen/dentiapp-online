@@ -1,6 +1,6 @@
 change: periodontogram
-status: proposed
-current_phase: tasks
+status: archived
+current_phase: archive
 phases:
   explore:
     status: completed
@@ -13,8 +13,8 @@ phases:
   tasks:
     status: completed
   apply:
-    status: pending
+    status: completed
   verify:
-    status: pending
+    status: completed
   archive:
-    status: pending
+    status: completed
