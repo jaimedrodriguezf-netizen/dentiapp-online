@@ -1,7 +1,7 @@
 import { getPatient } from '../../actions'
 import { getDentalRecords } from '@/app/(tenant)/[slug]/odontology/actions'
 import Link from 'next/link'
-import { ArrowLeft, Plus, FileText, CalendarDays, Phone, Mail, MapPin, Edit, Activity, ClipboardList } from 'lucide-react'
+import { ArrowLeft, Plus, FileText, CalendarDays, Phone, Mail, MapPin, Edit, ClipboardList } from 'lucide-react'
 
 interface Props {
   params: Promise<{ slug: string; id: string }>
@@ -51,6 +51,13 @@ export default async function PatientDetailPage({ params }: Props) {
           >
             <Edit className="w-4 h-4 mr-2" />
             Editar
+          </Link>
+          <Link
+            href={`/${slug}/odontology/periodontogram?patientId=${id}`}
+            className="btn btn-outline btn-sm rounded-xl font-bold border-indigo-200 text-indigo-600 hover:bg-indigo-50/50 hover:text-indigo-700"
+          >
+            <ClipboardList className="w-4 h-4 mr-2" />
+            Periodontograma
           </Link>
           <Link
             href={`/${slug}/odontology/form-033/new?patient=${id}`}
@@ -164,7 +171,10 @@ export default async function PatientDetailPage({ params }: Props) {
                         {record.consultation_reason || 'Sin motivo registrado'}
                       </p>
                     </div>
-                    <div className="text-gray-400 ml-3 shrink-0">
+                    <div className="text-gray-400 ml-3 shrink-0 flex items-center gap-2">
+                      <span className="hidden sm:inline-block px-2.5 py-1 rounded-xl bg-purple-50 text-[10px] font-black uppercase text-purple-700 border border-purple-100">
+                        Ver Ficha & Odontograma
+                      </span>
                       <FileText className="w-6 h-6" />
                     </div>
                   </div>
@@ -176,13 +186,20 @@ export default async function PatientDetailPage({ params }: Props) {
       </div>
 
       {/* Sticky Mobile Action Bar */}
-      <div className="fixed bottom-6 left-4 right-4 md:hidden z-30 flex gap-3">
+      <div className="fixed bottom-6 left-4 right-4 md:hidden z-30 flex gap-2">
         <Link
           href={`/${slug}/admission/patients/${id}/edit`}
           className="flex-1 btn bg-white border-gray-200 rounded-2xl h-14 font-black shadow-xl"
         >
           <Edit className="w-5 h-5 mr-2" />
           EDITAR
+        </Link>
+        <Link
+          href={`/${slug}/odontology/periodontogram?patientId=${id}`}
+          className="flex-1 btn bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100 rounded-2xl h-14 font-black shadow-xl"
+        >
+          <ClipboardList className="w-5 h-5 mr-2" />
+          PERIODONTO.
         </Link>
         <Link
           href={`/${slug}/odontology/form-033/new?patient=${id}`}
