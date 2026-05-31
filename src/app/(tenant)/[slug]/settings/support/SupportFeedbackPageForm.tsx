@@ -10,6 +10,49 @@ interface Props {
   userRole: string
 }
 
+// Comprimir y redimensionar imagen en el cliente para optimizar el storage
+function compressImage(file: Blob, maxWidth = 1600, maxHeight = 1200, quality = 0.85): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        let width = img.width
+        let height = img.height
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width)
+          width = maxWidth
+        }
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height)
+          height = maxHeight
+        }
+
+        canvas.width = width
+        canvas.height = height
+
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          resolve(event.target?.result as string)
+          return
+        }
+
+        ctx.drawImage(img, 0, 0, width, height)
+        const compressedBase64 = canvas.toDataURL('image/jpeg', quality)
+        resolve(compressedBase64)
+      }
+      img.onerror = () => {
+        resolve(event.target?.result as string)
+      }
+      img.src = event.target?.result as string
+    }
+    reader.onerror = (err) => reject(err)
+    reader.readAsDataURL(file)
+  })
+}
+
 export default function SupportFeedbackPageForm({ slug, userRole }: Props) {
   const [type, setType] = useState<FeedbackType>('bug')
   const [message, setMessage] = useState('')
@@ -42,7 +85,7 @@ export default function SupportFeedbackPageForm({ slug, userRole }: Props) {
   }, [userRole])
 
   // Manejar pegar imagen (Ctrl+V) sobre la página
-  const handlePaste = (e: ClipboardEvent<HTMLDivElement>) => {
+  const handlePaste = async (e: ClipboardEvent<HTMLDivElement>) => {
     const items = e.clipboardData?.items
     if (!items) return
 
@@ -50,13 +93,12 @@ export default function SupportFeedbackPageForm({ slug, userRole }: Props) {
       if (items[i].type.indexOf('image') !== -1) {
         const blob = items[i].getAsFile()
         if (blob) {
-          const reader = new FileReader()
-          reader.onload = (event) => {
-            if (event.target?.result) {
-              setScreenshotBase64(event.target.result as string)
-            }
+          try {
+            const compressed = await compressImage(blob)
+            setScreenshotBase64(compressed)
+          } catch (err) {
+            console.error('Error compressing pasted image:', err)
           }
-          reader.readAsDataURL(blob)
         }
       }
     }
@@ -67,31 +109,29 @@ export default function SupportFeedbackPageForm({ slug, userRole }: Props) {
     e.preventDefault()
   }
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault()
     const file = e.dataTransfer.files?.[0]
     if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader()
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setScreenshotBase64(event.target.result as string)
-        }
+      try {
+        const compressed = await compressImage(file)
+        setScreenshotBase64(compressed)
+      } catch (err) {
+        console.error('Error compressing dropped image:', err)
       }
-      reader.readAsDataURL(file)
     }
   }
 
   // Carga de archivo tradicional
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader()
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setScreenshotBase64(event.target.result as string)
-        }
+      try {
+        const compressed = await compressImage(file)
+        setScreenshotBase64(compressed)
+      } catch (err) {
+        console.error('Error compressing selected image:', err)
       }
-      reader.readAsDataURL(file)
     }
   }
 
