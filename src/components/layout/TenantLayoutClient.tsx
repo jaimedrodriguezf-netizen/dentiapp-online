@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Menu, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { Menu, PanelLeftClose, PanelLeftOpen, HelpCircle } from 'lucide-react'
 import { User } from '@supabase/supabase-js'
 import DashboardHeader from '@/components/dashboard/DashboardHeader'
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar'
 import GlobalSearch from '@/components/ui/GlobalSearch'
+import SupportFeedbackModal from '@/components/support/SupportFeedbackModal'
 
 interface Tenant {
   id: string
@@ -29,6 +30,7 @@ interface Props {
 
 export default function TenantLayoutClient({ children, user, membership, permissionsMap }: Props) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [isSupportOpen, setIsSupportOpen] = useState(false)
 
   // Initialize from localStorage in a way that avoids SSR issues.
   // This triggers a cascading render but it is necessary for local storage hydration.
@@ -86,6 +88,23 @@ export default function TenantLayoutClient({ children, user, membership, permiss
           plan={membership.tenants.plan}
         />
       </div>
+
+      {/* Botón Flotante de Soporte */}
+      <button
+        onClick={() => setIsSupportOpen(true)}
+        className="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 active:scale-95 transition-all flex items-center justify-center border border-indigo-500/20 group hover:shadow-indigo-500/20 hover:shadow-xl cursor-pointer"
+        title="¿Necesitás ayuda? Reportá un bug o sugerencia"
+      >
+        <HelpCircle className="w-5 h-5 group-hover:scale-105 transition-transform" />
+      </button>
+
+      {/* Modal de Soporte */}
+      <SupportFeedbackModal 
+        isOpen={isSupportOpen} 
+        onClose={() => setIsSupportOpen(false)} 
+        slug={membership.tenants.slug} 
+        userRole={membership.role} 
+      />
     </div>
   )
 }
