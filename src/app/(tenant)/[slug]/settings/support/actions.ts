@@ -90,7 +90,11 @@ export async function createSupportFeedback(
 // Resolver un reporte de soporte (Eliminando captura del Storage para ahorrar espacio)
 export async function resolveSupportFeedback(slug: string, feedbackId: string) {
   const supabase = await createClient()
-  const { tenantId } = await getTenantMembership(supabase)
+  const { tenantId, role } = await getTenantMembership(supabase)
+
+  if (!['admin', 'supervisor', 'doctor'].includes(role)) {
+    throw new Error('No tenés permisos para realizar esta acción')
+  }
 
   // 1. Consultar el feedback actual para obtener la ruta de la captura
   const { data: feedback, error: fetchError } = await supabase
@@ -140,7 +144,11 @@ export async function resolveSupportFeedback(slug: string, feedbackId: string) {
 // Obtener feedbacks pendientes para diagnóstico por IA
 export async function getFeedbacksForAI() {
   const supabase = await createClient()
-  const { tenantId } = await getTenantMembership(supabase)
+  const { tenantId, role } = await getTenantMembership(supabase)
+
+  if (!['admin', 'supervisor', 'doctor'].includes(role)) {
+    throw new Error('No tenés permisos para realizar esta acción')
+  }
 
   const { data, error } = await supabase
     .from('support_feedbacks')
