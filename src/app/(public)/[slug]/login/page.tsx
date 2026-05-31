@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Tooth } from '@/components/ui/ToothIcon'
 import { Mail, Lock, Loader2, ArrowRight, X } from 'lucide-react'
+import { APP_VERSION } from '@/lib/version'
 
 export default function TenantLoginPage() {
   const router = useRouter()
@@ -101,7 +102,7 @@ export default function TenantLoginPage() {
           </form>
 
           <p className="text-center mt-10 text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">
-            DentiApp Online Pro
+            DentiApp Online v{APP_VERSION}
           </p>
         </div>
       </div>

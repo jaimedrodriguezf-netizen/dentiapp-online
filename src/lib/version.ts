@@ -1,3 +1,3 @@
-export const APP_VERSION = "1.1.4"
+export const APP_VERSION = "1.1.5"
 export const APP_NAME = "DentiApp Online"
 export const APP_DESCRIPTION = "Panel administrativo para clínicas dentales"

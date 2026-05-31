@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { login } from '../actions'
 import { Tooth } from '@/components/ui/ToothIcon'
 import { Eye, EyeOff, Loader2, Mail, Lock, ShieldCheck, Sparkles, ArrowRight, X } from 'lucide-react'
+import { APP_VERSION } from '@/lib/version'
 
 export default function LoginForm() {
   const router = useRouter()
@@ -173,7 +174,7 @@ export default function LoginForm() {
           </div>
           
           <p className="text-center mt-8 text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">
-            DentiApp Online v1.0
+            DentiApp Online v{APP_VERSION}
           </p>
         </div>
       </div>
