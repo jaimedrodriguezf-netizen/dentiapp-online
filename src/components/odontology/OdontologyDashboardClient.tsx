@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Search, FileText, ArrowRight, UserPlus, Sparkles, ClipboardList } from 'lucide-react'
+import { Search, FileText, ArrowRight, UserPlus, ClipboardList } from 'lucide-react'
 import { Tooth } from '@/components/ui/ToothIcon'
 
 interface Patient {
@@ -37,7 +37,7 @@ export default function OdontologyDashboardClient({ initialRecords, slug }: Prop
   return (
     <div className="w-full space-y-8 animate-in fade-in duration-300">
       {/* Bento Grid Superior */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Estadísticas */}
         <div className="card bg-white border border-gray-200 shadow-sm p-6 rounded-3xl flex flex-row items-center justify-between">
           <div className="space-y-1">
@@ -61,23 +61,6 @@ export default function OdontologyDashboardClient({ initialRecords, slug }: Prop
           </div>
           <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center group-hover:scale-105 transition-transform shrink-0 border border-white/20">
             <UserPlus className="w-5 h-5 text-white" />
-          </div>
-        </Link>
-
-        {/* Acceso Rápido al Periodontograma */}
-        <Link
-          href={`/${slug}/odontology/periodontogram`}
-          className="card bg-white border border-gray-200 hover:border-indigo-200 hover:-translate-y-0.5 transition-all p-6 rounded-3xl flex flex-row items-center justify-between group shadow-sm"
-        >
-          <div className="space-y-1">
-            <span className="text-[10px] font-black text-indigo-500 uppercase tracking-widest block flex items-center gap-1">
-              <Sparkles className="w-3 h-3 animate-pulse" /> Novedad
-            </span>
-            <h3 className="text-md font-black text-gray-900 uppercase tracking-tight">Periodontograma</h3>
-            <p className="text-xs text-gray-500 font-medium">Mapeo clínico digital periodontal.</p>
-          </div>
-          <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-            <ClipboardList className="w-6 h-6" />
           </div>
         </Link>
       </div>
