@@ -190,11 +190,11 @@ export default function PeriodontogramDashboard({
           {records.length > 0 ? (
             records.map((r, idx) => {
               const isActive = r.id === selectedRecordId
-              const dateStr = new Date(r.examination_date).toLocaleDateString('es-EC', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric'
-              })
+              const date = new Date(r.examination_date)
+              const day = String(date.getDate()).padStart(2, '0')
+              const month = String(date.getMonth() + 1).padStart(2, '0')
+              const year = date.getFullYear()
+              const dateStr = `${day}/${month}/${year}`
 
               return (
                 <button
