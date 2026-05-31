@@ -21,6 +21,34 @@ async function getTenantMembership(supabase: SupabaseClient) {
   return { tenantId: membership.tenant_id, role: membership.role }
 }
 
+// Registrar auditoría en la base de datos
+async function createAuditLog(
+  supabase: SupabaseClient,
+  tenantId: string,
+  action: string,
+  resourceType: string,
+  resourceId: string,
+  details: Record<string, unknown>
+) {
+  try {
+    const { data: userData } = await supabase.auth.getUser()
+    const user = userData?.user
+    if (!user) return
+
+    await supabase.from('audit_logs').insert({
+      tenant_id: tenantId,
+      user_id: user.id,
+      user_email: user.email || 'anonimo@dentiapp.online',
+      action,
+      resource_type: resourceType,
+      resource_id: resourceId,
+      details
+    })
+  } catch (err) {
+    console.error('Failed to write audit log:', err)
+  }
+}
+
 // Crear un reporte de soporte
 export async function createSupportFeedback(
   slug: string,
@@ -136,6 +164,12 @@ export async function resolveSupportFeedback(slug: string, feedbackId: string) {
     console.error('Error updating feedback to resolved:', updateError)
     throw new Error(`Error al resolver el reporte: ${updateError.message}`)
   }
+
+  // Registrar la resolución en los logs de auditoría
+  await createAuditLog(supabase, tenantId, 'resolve_support_feedback', 'support_feedbacks', feedbackId, {
+    resolved_at: new Date().toISOString(),
+    had_screenshot: !!rawFeedback.screenshot_path
+  })
 
   revalidatePath(`/${slug}/settings/support`)
   return true
