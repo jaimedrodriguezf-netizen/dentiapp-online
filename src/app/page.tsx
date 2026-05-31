@@ -16,6 +16,7 @@ import {
   X,
 } from 'lucide-react'
 import { Tooth } from '@/components/ui/ToothIcon'
+import { APP_VERSION } from '@/lib/version'
 
 // Floating element component
 function FloatingElement({
@@ -674,8 +675,11 @@ function Footer() {
           </div>
         </div>
         <div className="divider my-8"></div>
-        <div className="text-center text-sm">
-          © {new Date().getFullYear()} DentiApp Online. Todos los derechos reservados.
+        <div className="text-center text-sm space-y-1">
+          <div>© {new Date().getFullYear()} DentiApp Online. Todos los derechos reservados.</div>
+          <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+            v{APP_VERSION}
+          </div>
         </div>
       </div>
     </footer>
