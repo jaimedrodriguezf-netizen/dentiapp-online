@@ -1,6 +1,6 @@
 change: support-feedback
 status: proposed
-current_phase: tasks
+current_phase: verify
 phases:
   explore:
     status: completed
@@ -13,7 +13,7 @@ phases:
   tasks:
     status: completed
   apply:
-    status: pending
+    status: completed
   verify:
     status: pending
   archive:
