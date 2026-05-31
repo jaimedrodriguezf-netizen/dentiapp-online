@@ -153,7 +153,12 @@ export default function DashboardSidebar({ role, tenant, permissions = {}, plan 
           .filter((item) => hasPermission(item))
           .map((item) => {
             const fullPath = `/${slug}${item.href}`
-            const isActive = pathname === fullPath || pathname.startsWith(fullPath + '/')
+            
+            // Si la ruta activa es Periodontograma, evitamos activar también la pestaña general de Odontología
+            const isActive = item.href === '/odontology'
+              ? pathname === fullPath || (pathname.startsWith(fullPath + '/') && !pathname.startsWith(fullPath + '/periodontogram'))
+              : pathname === fullPath || pathname.startsWith(fullPath + '/')
+              
             const Icon = item.icon
 
             return (
