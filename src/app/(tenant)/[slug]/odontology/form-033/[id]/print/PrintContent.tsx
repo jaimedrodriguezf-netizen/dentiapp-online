@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Printer } from 'lucide-react'
 import { generatePrescriptionHTML, PrescriptionItem } from './printHelpers'
@@ -75,6 +75,20 @@ interface PrintContentProps {
   type?: string
 }
 
+interface Html2PdfOptions {
+  margin?: number | number[]
+  filename?: string
+  image?: { type: string; quality: number }
+  html2canvas?: { scale?: number; useCORS?: boolean; logging?: boolean }
+  jsPDF?: { unit: string; format: string; orientation: string }
+}
+
+interface Html2PdfWrapper {
+  set: (options: Html2PdfOptions) => Html2PdfWrapper
+  from: (element: HTMLElement) => Html2PdfWrapper
+  save: () => Promise<void>
+}
+
 function calculateAgeAndCondition(birthDateStr: string | null | undefined) {
   if (!birthDateStr) return { value: '—', h: false, d: false, m: false, a: false }
   const birthDate = new Date(birthDateStr)
@@ -117,6 +131,31 @@ export default function PrintContent({ record, teeth, prescriptions, sessions, s
   const { tenant } = useTenant()
   const printRef = useRef<HTMLDivElement>(null)
   const isPrescription = type === 'prescription'
+  const [isGenerating, setIsGenerating] = useState(false)
+
+  const handleGeneratePDF = async () => {
+    setIsGenerating(true)
+    try {
+      const html2pdf = ((await import('html2pdf.js')).default) as unknown as () => Html2PdfWrapper
+      const element = document.querySelector('.print-area') as HTMLElement | null
+
+      if (!element) return
+
+      const opt: Html2PdfOptions = {
+        margin: [10, 10, 10, 10],
+        filename: `Formulario_033_${record.patients?.last_name || 'Paciente'}_${record.patients?.first_name || ''}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      }
+
+      await html2pdf().set(opt).from(element).save()
+    } catch (error) {
+      console.error('Error generando PDF nativo:', error)
+    } finally {
+      setIsGenerating(false)
+    }
+  }
 
   useEffect(() => {
     if (isPrescription && printRef.current) {
@@ -250,11 +289,21 @@ export default function PrintContent({ record, teeth, prescriptions, sessions, s
             <strong className="text-xs text-gray-800 font-bold uppercase tracking-wide">Formulario 033 MSP (2021)</strong>
           </div>
           <button
-            onClick={() => window.print()}
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-black uppercase text-white hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 animate-pulse"
+            onClick={handleGeneratePDF}
+            disabled={isGenerating}
+            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-black uppercase text-white hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 disabled:opacity-55"
           >
-            <Printer className="w-4 h-4" />
-            Imprimir Formulario
+            {isGenerating ? (
+              <>
+                <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin shrink-0" />
+                Generando PDF...
+              </>
+            ) : (
+              <>
+                <Printer className="w-4 h-4" />
+                Descargar Formulario PDF
+              </>
+            )}
           </button>
         </div>
       </div>
