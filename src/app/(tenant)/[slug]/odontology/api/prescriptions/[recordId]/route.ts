@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { getTenantId } from '../../../actions'
 
 interface PrescriptionItem {
   id?: string
@@ -14,15 +15,21 @@ interface PrescriptionItem {
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ recordId: string }> }
+  { params }: { params: Promise<{ slug: string; recordId: string }> }
 ) {
-  const { recordId } = await params
+  const { slug, recordId } = await params
   const supabase = await createClient()
+  const tenantId = await getTenantId(slug)
+
+  if (!tenantId) {
+    return NextResponse.json({ error: 'No tienes una clínica activa' }, { status: 400 })
+  }
 
   const { data, error } = await supabase
     .from('prescriptions')
     .select('*')
     .eq('dental_record_id', recordId)
+    .eq('tenant_id', tenantId)
     .order('created_at', { ascending: true })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -31,31 +38,43 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ recordId: string }> }
+  { params }: { params: Promise<{ slug: string; recordId: string }> }
 ) {
-  const { recordId } = await params
+  const { slug, recordId } = await params
   const supabase = await createClient()
+  const tenantId = await getTenantId(slug)
+
+  if (!tenantId) {
+    return NextResponse.json({ error: 'No tienes una clínica activa' }, { status: 400 })
+  }
+
   const { items } = await request.json() as { items: PrescriptionItem[] }
 
   if (!items || !Array.isArray(items)) {
     return NextResponse.json({ error: 'Invalid items' }, { status: 400 })
   }
 
-  // Delete existing ones for this record (simple sync for now)
+  // Delete existing ones for this record
   const { error: deleteError } = await supabase
     .from('prescriptions')
     .delete()
     .eq('dental_record_id', recordId)
+    .eq('tenant_id', tenantId)
 
   if (deleteError) return NextResponse.json({ error: deleteError.message }, { status: 500 })
 
-  // Insert new ones
+  if (items.length === 0) {
+    return NextResponse.json({ success: true })
+  }
+
+  // Insert new ones with tenant_id
   const { error: insertError } = await supabase
     .from('prescriptions')
     .insert(
       items.map((item) => ({
         dental_record_id: recordId,
-        medication_id: item.medication_id,
+        tenant_id: tenantId,
+        medication_id: item.medication_id || null,
         medication_name: item.medication_name,
         dosage: item.dosage,
         frequency: item.frequency,

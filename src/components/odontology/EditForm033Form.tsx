@@ -13,12 +13,23 @@ import OdontogramEditor from '@/components/odontology/OdontogramEditor'
 import { OralHygieneFields, FluorosisField, MalocclusionFields, StomatognathicFields, IndiceField } from '@/components/odontology/OralExamSection'
 import { isDeciduous } from '@/components/odontology/OdontogramSVG'
 import { updateDentalRecord } from '@/app/(tenant)/[slug]/odontology/actions'
+import InteractiveToothSelector from '@/components/odontology/InteractiveToothSelector'
+import DiagnosesListManager from '@/components/odontology/DiagnosesListManager'
+
+const FDI_TEETH = [
+  18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28,
+  55, 54, 53, 52, 51, 61, 62, 63, 64, 65,
+  85, 84, 83, 82, 81, 71, 72, 73, 74, 75,
+  48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38
+]
 
 interface DiagnosisData {
   code?: string
   description?: string
   text?: string
   type?: string
+  pieza_dental?: number | null
+  caras_afectadas?: string[]
 }
 
 interface DentalRecord {
@@ -392,37 +403,7 @@ export default function EditForm033Form({ slug, id, record, initialTeeth, sessio
               <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">
                 10. Diagnóstico (CIE-10)
               </h3>
-              <div className="space-y-4">
-                <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
-                  <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 ml-1">Código o Descripción</label>
-                  <CIESearch
-                    defaultCode={record.diagnosis?.code || ''}
-                    defaultDescription={record.diagnosis?.description || ''}
-                  />
-                </div>
-                <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
-                  <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2 ml-1">Tipo de diagnóstico</label>
-                  <select
-                    name="diagnosis_type"
-                    defaultValue={record.diagnosis?.type || ''}
-                    className="w-full rounded-xl border-2 border-gray-100 bg-gray-50/30 px-4 py-3 text-sm font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
-                  >
-                    <option value="">Seleccioná...</option>
-                    <option value="presuntivo">Presuntivo</option>
-                    <option value="definitivo">Definitivo</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1 ml-1">Notas Clínicas</label>
-                  <textarea
-                    name="diagnosis_notes"
-                    defaultValue={record.diagnosis?.text || ''}
-                    className="w-full rounded-2xl border border-gray-200 bg-gray-50/30 px-4 py-3 text-sm text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
-                    rows={4}
-                    placeholder="Escribí notas adicionales aquí..."
-                  />
-                </div>
-              </div>
+              <DiagnosesListManager initialDiagnoses={record.diagnosis} />
             </div>
 
             {/* Planes */}

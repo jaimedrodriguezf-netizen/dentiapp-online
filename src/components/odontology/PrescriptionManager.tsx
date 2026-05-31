@@ -24,6 +24,7 @@ interface PrescriptionTemplate {
 interface Props {
   slug: string
   recordId: string
+  onSaveSuccess?: () => void
 }
 
 const templates: PrescriptionTemplate[] = [
@@ -52,7 +53,7 @@ const templates: PrescriptionTemplate[] = [
   }
 ]
 
-export default function PrescriptionManager({ slug, recordId }: Props) {
+export default function PrescriptionManager({ slug, recordId, onSaveSuccess }: Props) {
   const [items, setItems] = useState<PrescriptionItem[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -149,6 +150,7 @@ export default function PrescriptionManager({ slug, recordId }: Props) {
       setError(data.error)
     } else {
       setSuccess(true)
+      onSaveSuccess?.()
       setTimeout(() => setSuccess(false), 2000)
     }
     setSaving(false)

@@ -149,11 +149,47 @@ export interface PrescriptionItem {
   instructions?: string | null
 }
 
-export function generatePrescriptionHTML(record: DentalRecord, prescriptions: PrescriptionItem[]): string {
+export function generatePrescriptionHTML(
+  record: DentalRecord,
+  prescriptions: PrescriptionItem[],
+  tenant?: { name: string; logo_url: string | null; phone: string | null; address: string | null } | null
+): string {
   const patient = record.patients
   const dateStr = record.opening_date 
     ? new Date(record.opening_date).toLocaleDateString('es-EC') 
     : new Date().toLocaleDateString('es-EC')
+
+  const clinicHeaderHTML = tenant ? `
+    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 20px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        ${tenant.logo_url ? `
+          <img src="${esc(tenant.logo_url)}" style="height: 45px; width: auto; max-width: 120px; object-fit: contain;" />
+        ` : `
+          <div style="height: 35px; width: 35px; background-color: #f3f4f6; border: 1px solid #d1d5db; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #6b7280; font-size: 10px;">
+            ${esc(tenant.name.substring(0, 2).toUpperCase())}
+          </div>
+        `}
+        <div>
+          <h2 style="margin: 0; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #000;">
+            ${esc(tenant.name)}
+          </h2>
+          <p style="margin: 2px 0 0 0; font-size: 8px; color: #4b5563; text-transform: uppercase; font-weight: bold;">
+            Establecimiento Odontológico
+          </p>
+        </div>
+      </div>
+      <div style="text-align: right; font-size: 8px; color: #374151; line-height: 1.3;">
+        ${tenant.address ? `<p style="margin: 1px 0;"><strong>Dirección:</strong> ${esc(tenant.address)}</p>` : ''}
+        ${tenant.phone ? `<p style="margin: 1px 0;"><strong>Teléfono:</strong> ${esc(tenant.phone)}</p>` : ''}
+        <p style="color: #9ca3af; font-size: 6.5px; margin-top: 2px;">RECETA MÉDICA</p>
+      </div>
+    </div>
+  ` : `
+    <div class="print-header">
+      <h1>Receta Médica</h1>
+      <p>Establecimiento Odontológico</p>
+    </div>
+  `
 
   return `
     <style>
@@ -176,13 +212,13 @@ export function generatePrescriptionHTML(record: DentalRecord, prescriptions: Pr
       .print-signature { margin-top: 60px; display: flex; justify-content: center; }
       .print-signature div { border-top: 1px solid #000; padding-top: 5px; font-size: 9pt; text-align: center; width: 250px; }
       .print-footer { text-align: center; font-size: 8pt; color: #999; margin-top: 60px; border-top: 1px solid #ddd; padding-top: 8px; }
+      @media print {
+        .no-print { display: none !important; }
+      }
     </style>
 
     <div class="print-form">
-      <div class="print-header">
-        <h1>Receta Médica</h1>
-        <p>DentiApp Online</p>
-      </div>
+      ${clinicHeaderHTML}
 
       <div class="print-section">
         <div class="print-grid">
@@ -211,7 +247,7 @@ export function generatePrescriptionHTML(record: DentalRecord, prescriptions: Pr
       </div>
 
       <div class="print-footer">
-        Generado por DentiApp Online — ${new Date().toLocaleDateString('es-EC')}
+        Generado el ${new Date().toLocaleDateString('es-EC')}
       </div>
     </div>
   `

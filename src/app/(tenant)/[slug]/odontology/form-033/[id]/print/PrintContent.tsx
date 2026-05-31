@@ -87,6 +87,7 @@ interface Html2PdfWrapper {
   set: (options: Html2PdfOptions) => Html2PdfWrapper
   from: (element: HTMLElement) => Html2PdfWrapper
   save: () => Promise<void>
+  output: (type: 'blob' | 'arraybuffer' | 'bloburl' | 'datauristring' | 'datauri' | 'dataurlstring') => Promise<Blob>
 }
 
 function calculateAgeAndCondition(birthDateStr: string | null | undefined) {
@@ -131,31 +132,80 @@ export default function PrintContent({ record, teeth, prescriptions, sessions, s
   const { tenant } = useTenant()
   const printRef = useRef<HTMLDivElement>(null)
   const isPrescription = type === 'prescription'
-  const [isGenerating, setIsGenerating] = useState(false)
+  
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null)
+  const [isGenerating, setIsGenerating] = useState(!isPrescription)
+  const [errorGenerating, setErrorGenerating] = useState(false)
 
-  const handleGeneratePDF = async () => {
-    setIsGenerating(true)
-    try {
-      const html2pdf = ((await import('html2pdf.js')).default) as unknown as () => Html2PdfWrapper
-      const element = document.querySelector('.print-area') as HTMLElement | null
-
-      if (!element) return
-
-      const opt: Html2PdfOptions = {
-        margin: [10, 10, 10, 10],
-        filename: `Formulario_033_${record.patients?.last_name || 'Paciente'}_${record.patients?.first_name || ''}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      }
-
-      await html2pdf().set(opt).from(element).save()
-    } catch (error) {
-      console.error('Error generando PDF nativo:', error)
-    } finally {
-      setIsGenerating(false)
-    }
+  const handleDownloadPDF = () => {
+    if (!pdfUrl) return
+    const link = document.createElement('a')
+    link.href = pdfUrl
+    link.download = `Formulario_033_${record.patients?.last_name || 'Paciente'}_${record.patients?.first_name || ''}.pdf`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
+
+  // Generación automática del PDF al montar la vista de impresión
+  useEffect(() => {
+    if (!isPrescription) {
+      let active = true
+      const timer = setTimeout(async () => {
+        try {
+          // Next.js 16 architectural requirement: 'use client' components are still pre-rendered 
+          // on the server during Static Generation (SSG) and Server-Side Rendering (SSR). 
+          // Because 'html2pdf.js' depends on browser-only globals (window, document, HTMLCanvasElement) 
+          // at its module-level evaluation, it must be dynamically imported inside useEffect 
+          // to completely bypass server-side execution and prevent build-time reference errors.
+          const html2pdf = ((await import('html2pdf.js')).default) as unknown as () => Html2PdfWrapper
+          const element = document.querySelector('.print-area') as HTMLElement | null
+
+          if (!element) {
+            if (active) setErrorGenerating(true)
+            return
+          }
+
+          const opt: Html2PdfOptions = {
+            margin: [10, 10, 10, 10],
+            filename: `Formulario_033_${record.patients?.last_name || 'Paciente'}_${record.patients?.first_name || ''}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, logging: false },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          }
+
+          const pdfWorker = html2pdf().set(opt).from(element)
+          const blob = await pdfWorker.output('blob')
+          
+          if (active) {
+            const url = URL.createObjectURL(blob)
+            setPdfUrl(url)
+            setIsGenerating(false)
+          }
+        } catch (error) {
+          console.error('Error generando vista previa PDF:', error)
+          if (active) {
+            setErrorGenerating(true)
+            setIsGenerating(false)
+          }
+        }
+      }, 1000)
+
+      return () => {
+        active = false
+        clearTimeout(timer)
+      }
+    }
+  }, [isPrescription, record])
+
+  // Limpieza de URL en desmontaje
+  useEffect(() => {
+    return () => {
+      if (pdfUrl) {
+        URL.revokeObjectURL(pdfUrl)
+      }
+    }
+  }, [pdfUrl])
 
   useEffect(() => {
     if (isPrescription && printRef.current) {
@@ -274,42 +324,155 @@ export default function PrintContent({ record, teeth, prescriptions, sessions, s
 
   return (
     <div>
-      {/* Dynamic Print Preview Header */}
-      <div className="w-full p-4 no-print border-b border-gray-200 bg-white mb-6">
-        <div className="max-w-[190mm] mx-auto flex items-center justify-between">
-          <Link
-            href={`/${slug}/odontology/form-033/${id}`}
-            className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-700"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Volver
-          </Link>
-          <div className="text-center hidden md:block">
-            <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest block">Vista Previa</span>
-            <strong className="text-xs text-gray-800 font-bold uppercase tracking-wide">Formulario 033 MSP (2021)</strong>
+      {/* Loader de PDF */}
+      {!isPrescription && isGenerating && (
+        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
+          <div className="card bg-white shadow-xl shadow-slate-100 rounded-3xl border border-slate-100 p-8 max-w-md w-full space-y-6">
+            <div className="flex justify-center">
+              <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center animate-bounce">
+                <Printer className="w-8 h-8" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">Generando Documento PDF</h3>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Formulario 033 — MSP Ecuador</p>
+            </div>
+            <p className="text-xs text-gray-500 font-medium">
+              Estamos compilando el historial dental, diagramas clínicos y evolución del paciente en un archivo PDF de alta definición...
+            </p>
+            <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+              <div className="bg-blue-600 h-full w-2/3 rounded-full animate-pulse" style={{
+                animation: 'loading 1.5s infinite ease-in-out'
+              }} />
+            </div>
           </div>
-          <button
-            onClick={handleGeneratePDF}
-            disabled={isGenerating}
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-black uppercase text-white hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 disabled:opacity-55"
-          >
-            {isGenerating ? (
-              <>
-                <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin shrink-0" />
-                Generando PDF...
-              </>
-            ) : (
-              <>
-                <Printer className="w-4 h-4" />
-                Descargar Formulario PDF
-              </>
-            )}
-          </button>
+          <style>{`
+            @keyframes loading {
+              0% { transform: translateX(-100%); }
+              100% { transform: translateX(150%); }
+            }
+          `}</style>
         </div>
-      </div>
+      )}
+
+      {/* Pantalla de Error */}
+      {!isPrescription && errorGenerating && (
+        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
+          <div className="card bg-white shadow-xl shadow-slate-100 rounded-3xl border border-slate-100 p-8 max-w-md w-full space-y-6">
+            <div className="flex justify-center text-red-500">
+              <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center">
+                <Printer className="w-8 h-8" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">Error al Generar PDF</h3>
+              <p className="text-xs text-red-500 font-bold uppercase tracking-widest">Lo sentimos mucho</p>
+            </div>
+            <p className="text-xs text-gray-500 font-medium">
+              No pudimos generar el archivo PDF interactivo en memoria. Pero podés volver a intentarlo o volver a la vista del paciente.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setErrorGenerating(false)
+                  setIsGenerating(true)
+                }}
+                className="btn btn-primary flex-1 rounded-2xl font-black"
+              >
+                Reintentar
+              </button>
+              <Link
+                href={`/${slug}/odontology/form-033/${id}`}
+                className="btn btn-ghost border border-gray-200 flex-1 rounded-2xl font-bold"
+              >
+                Volver
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Visor de PDF cuando está listo */}
+      {!isPrescription && pdfUrl && (
+        <div className="min-h-screen bg-slate-100 flex flex-col no-print">
+          {/* Barra superior de navegación y acciones */}
+          <div className="w-full p-4 bg-white border-b border-slate-200 sticky top-0 z-50">
+            <div className="max-w-[210mm] mx-auto flex items-center justify-between">
+              <Link
+                href={`/${slug}/odontology/form-033/${id}`}
+                className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-700"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Volver al Expediente
+              </Link>
+              <div className="text-center hidden md:block">
+                <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest block">Vista Previa Oficial PDF</span>
+                <strong className="text-xs text-gray-800 font-bold uppercase tracking-wide">
+                  {record.patients?.last_name || 'Paciente'} {record.patients?.first_name || ''}
+                </strong>
+              </div>
+              <button
+                onClick={handleDownloadPDF}
+                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-black uppercase text-white hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
+              >
+                <Printer className="w-4 h-4" />
+                Descargar PDF
+              </button>
+            </div>
+          </div>
+
+          {/* Visor de PDF responsivo */}
+          <div className="flex-1 flex justify-center p-0 md:p-6 w-full max-w-[210mm] mx-auto">
+            {/* Vista para PC: Iframe de PDF interactivo */}
+            <div className="hidden md:block w-full h-[calc(100vh-120px)] bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200">
+              <iframe
+                src={`${pdfUrl}#toolbar=1&navpanes=0`}
+                className="w-full h-full border-none"
+                title="Vista previa del Formulario 033"
+              />
+            </div>
+
+            {/* Vista para Móviles: Tarjeta premium con enlace directo */}
+            <div className="md:hidden w-full px-4 py-8 flex flex-col items-center justify-center text-center space-y-6">
+              <div className="card bg-white shadow-xl rounded-3xl border border-slate-100 p-8 w-full space-y-6">
+                <div className="flex justify-center">
+                  <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <Printer className="w-8 h-8" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">PDF Listo</h3>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Vista móvil adaptada</p>
+                </div>
+                <p className="text-xs text-gray-500 font-medium">
+                  En dispositivos móviles se recomienda abrir el PDF en una ventana nueva o descargarlo para visualizarlo con el visor de PDF nativo de tu sistema.
+                </p>
+                <div className="flex flex-col gap-3 w-full">
+                  <a
+                    href={pdfUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="btn btn-primary rounded-2xl font-black text-xs uppercase w-full flex items-center justify-center"
+                  >
+                    Abrir PDF en pantalla completa
+                  </a>
+                  <button
+                    onClick={handleDownloadPDF}
+                    className="btn btn-outline border-slate-200 text-slate-700 rounded-2xl font-bold text-xs uppercase w-full"
+                  >
+                    Descargar archivo PDF
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Styled Printable Page Replica of Formulario 033 */}
-      <div className="print-area">
+      {/* Se mantiene siempre en el DOM pero oculto si no es receta */}
+      <div className={!isPrescription ? "absolute opacity-0 pointer-events-none -z-50 left-[-9999px] top-[-9999px]" : ""}>
+        <div className="print-area">
         <style>{`
           /* SCREEN STYLES: Beautiful paper-like preview card on screen */
           .form-033-print {
@@ -317,23 +480,23 @@ export default function PrintContent({ record, teeth, prescriptions, sessions, s
             border: 1px solid #e5e7eb;
             border-radius: 24px;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
-            padding: 35px;
+            padding: 20px;
             max-width: 190mm;
-            margin: 0 auto 30px;
+            margin: 0 auto 20px;
             color: black;
             font-family: 'Courier New', Courier, monospace;
-            font-size: 8.5px;
-            line-height: 1.25;
+            font-size: 8px;
+            line-height: 1.2;
           }
           .form-033-print table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 8px;
-            font-size: 7.5px;
+            margin-bottom: 4px;
+            font-size: 7px;
           }
           .form-033-print th, .form-033-print td {
             border: 1px solid black;
-            padding: 3px 5px;
+            padding: 2px 4px;
             text-align: left;
             vertical-align: middle;
           }
@@ -341,8 +504,8 @@ export default function PrintContent({ record, teeth, prescriptions, sessions, s
             background-color: #f1f5f9;
             font-weight: 900;
             text-transform: uppercase;
-            font-size: 9px;
-            padding: 4px 6px;
+            font-size: 8px;
+            padding: 3px 5px;
             border: 1.5px solid black;
           }
           .form-033-print .label-sub {
@@ -365,8 +528,8 @@ export default function PrintContent({ record, teeth, prescriptions, sessions, s
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding-bottom: 8px;
-            margin-bottom: 12px;
+            padding-bottom: 4px;
+            margin-bottom: 8px;
             border-bottom: 1.5px solid black;
           }
           .clinic-logo-container {
@@ -600,7 +763,7 @@ export default function PrintContent({ record, teeth, prescriptions, sessions, s
             </thead>
             <tbody>
               <tr>
-                <td colSpan={64} className="min-h-[30px] font-bold p-3 align-top">
+                <td colSpan={64} className="min-h-[20px] font-bold p-2 align-top">
                   {record.consultation_reason || '—'}
                 </td>
               </tr>
@@ -616,7 +779,7 @@ export default function PrintContent({ record, teeth, prescriptions, sessions, s
             </thead>
             <tbody>
               <tr>
-                <td className="min-h-[45px] font-bold p-3 align-top whitespace-pre-wrap">
+                <td className="min-h-[30px] font-bold p-2 align-top whitespace-pre-wrap">
                   {parsedCurrentProblem}
                 </td>
               </tr>
@@ -785,8 +948,8 @@ export default function PrintContent({ record, teeth, prescriptions, sessions, s
             </thead>
             <tbody>
               <tr>
-                <td className="p-3 bg-white flex justify-center">
-                  <div className="w-full max-w-[580px] print:max-w-full">
+                <td className="py-1 bg-white flex justify-center">
+                  <div className="w-full max-w-[400px]">
                     <OdontogramSVG
                       teeth={teeth}
                       onToothClick={() => {}}
@@ -1004,7 +1167,7 @@ export default function PrintContent({ record, teeth, prescriptions, sessions, s
         </div>
 
         {/* ─── PÁGINA 2 OFICIAL DEL FORMULARIO 033 ─── */}
-        <div className="page-break-before mt-8 border-t-2 border-dashed border-gray-200 pt-8 print:border-0 print:pt-0">
+        <div className="page-break-before">
           <div className="form-033-print">
             {/* Cabecera de identificación de la Página 2 */}
             <div className="flex justify-between items-center bg-[#f1f5f9] border border-black p-2 mb-4 font-bold text-[7.5px] uppercase tracking-wide">
@@ -1170,5 +1333,6 @@ export default function PrintContent({ record, teeth, prescriptions, sessions, s
         </div>
       </div>
     </div>
+  </div>
   )
 }

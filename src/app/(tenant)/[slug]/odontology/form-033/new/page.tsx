@@ -47,6 +47,7 @@ export default async function NewForm033Page({ params, searchParams }: Props) {
 
       <Form033Wizard
         slug={slug}
+        patientGender={patient?.gender}
         createAction={createDentalRecord.bind(null, slug, patientId!) as unknown as (fd: FormData) => Promise<void>}
       />
     </div>
