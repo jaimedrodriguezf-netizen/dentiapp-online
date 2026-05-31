@@ -1,0 +1,43 @@
+Sheets: ['1', '2']
+
+--- Active Sheet: 1 ---
+Dimensions: A1:BL86
+Row 001: | A. DATOS DE ESTABLECIMIENTO Y USUARIO / PACIENTE |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 002: | INSTITUCIÓN DEL SISTEMA |  |  |  |  |  |  |  |  |  |  |  |  | UNICÓDIGO | 
+Row 003: | IESS-SSC |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 004: | PRIMER APELLIDO |  |  |  |  |  |  |  |  |  |  |  | SEGUNDO APELLIDO |  | 
+Row 008: | B. MOTIVO DE CONSULTA  |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 011: | C. ENFERMEDAD ACTUAL |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 018: | D. ANTECEDENTES PATOLÓGICOS PERSONALES |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 019: | 1. ALERGIA ANTIBIÓTICO |  |  |  |  |  | 2. ALERGIA ANESTESIA |  |  |  |  |  | 3. HEMORRAGIAS |  | 
+Row 025: | E. ANTECEDENTES PATOLÓGICOS FAMILIARES |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 026: | 1. CARDIOPATÍA |  |  |  |  |  |  | 2. 
+HIPERTENSIÓN ARTERIAL |  |  |  |  |  |  | 3. ENF. C. VASCULAR
+Row 032: | F. CONSTANTES VITALES |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 033: | TEMPERATURA  °C |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 035: | G. EXAMEN DEL SISTEMA ESTOMATOGNÁTICO |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 036: | 1. | LABIOS |  |  |  |  |  |  | 3. | MAXILAR SUPERIOR |  |  |  |  | 
+Row 037: | 2. | MEJILLAS |  |  |  |  |  |  | 4. | MAXILAR INFERIOR |  |  |  |  | 
+Row 043: |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  
+Row 044: | H. ODONTOGRAMA |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 046: | RECESIÓN   |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 048: | MOVILIDAD |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 049: |  |  |  |  |  |  | 18.0 |  |  | 17.0 |  |  | 16.0 |  | 
+Row 052: |  |  |  |  |  |  |  |  |  |  | 55.0 |  |  | 54.0 | 
+Row 054: |  |  |  |  |  |  |  |  |   |  |  |  |  |  | 
+Row 056: |  |  |  |  |  |  |  |  |  |  | 85.0 |  |  | 84.0 | 
+Row 059: |  |  |  |  |  |  | 48.0 |  |  | 47.0 |  |  | 46.0 |  | 
+Row 060: | MOVILIDAD |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 062: | RECESIÓN   |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 065: | I. INDICADORES DE SALUD BUCAL |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 066: | HIGIENE ORAL SIMPLIFICADA |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 068: | PIEZAS DENTALES EXAMINADAS |  |  |  |  |  |  |  |  |  |  |  | PLACA |  | 
+Row 070: |  |  |  |  |  |  |  |  |  |  |  |  | 0 - 1 - 2 - 3 - 9 |  | 
+Row 071: | 16.0 |  |  |  | 17.0 |  |  |  | 55.0 |  |  |  |  |  | 
+Row 073: | 11.0 |  |  |  | 21.0 |  |  |  | 51.0 |  |  |  |  |  | 
+Row 075: | 26.0 |  |  |  | 27.0 |  |  |  | 65.0 |  |  |  |  |  | 
+Row 077: | 36.0 |  |  |  | 37.0 |  |  |  | 75.0 |  |  |  |  |  | 
+Row 079: | 31.0 |  |  |  | 41.0 |  |  |  | 71.0 |  |  |  |  |  | 
+Row 081: | 46.0 |  |  |  | 47.0 |  |  |  | 85.0 |  |  |  |  |  | 
+Row 083: | TOTALES |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 086: | SNS-MSP / HCU-form.033/ 2021 |  |  |  |  |  |  |  |  |  |  |  |  |  | 

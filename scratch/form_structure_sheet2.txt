@@ -1,0 +1,31 @@
+Sheets: ['1', '2']
+
+--- Sheet 2 ---
+Dimensions: A1:BM72
+Row 001: | L. PEDIDO DE EXÁMENES COMPLEMENTARIOS |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 006: | M. INFORME DE EXÁMENES |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 007: | BIOMETRIA |  |  |  |  |  |  |  | QUIMICA SANGUINEA |  |  |  |  |  | 
+Row 015: | N. DIAGNÓSTICO |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 016: | 1. |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 017: | 2. |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 018: | 3. |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 020: | O. DATOS DEL PROFESIONAL RESPONSABLE |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 021: | FECHA DE APERTURA
+(aaaa-mm-dd) |  |  |  |  |  |  |  | HORA
+(hh:mm) |  |  |  |  |  | PRIMER NOMBRE
+Row 023: | NÚMERO DE DOCUMENTO DE IDENTIFICACIÒN |  |  |  |  |  |  |  |  |  |  |  |  |  | FIRMA
+Row 026: | P. TRATAMIENTO |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 028: | No. DE SESIÓN Y FECHA |  |  |  |  |  |  |  | DIAGNOSTICOS Y COMPLICACIONES |  |  |  |  |  | 
+Row 029: | No. SESIÓN |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 032: | FECHA |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 036: | No. SESIÓN |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 039: | FECHA |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 043: | No. SESIÓN |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 046: | FECHA |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 050: | No. SESIÓN |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 053: | FECHA |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 057: | No. SESIÓN |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 060: | FECHA |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 064: | No. SESIÓN |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 067: | FECHA |  |  |  |  |  |  |  |  |  |  |  |  |  | 
+Row 072: | SNS-MSP / HCU-form.033/2021 |  |  |  |  |  |  |  |  |  |  |  |  |  | 
