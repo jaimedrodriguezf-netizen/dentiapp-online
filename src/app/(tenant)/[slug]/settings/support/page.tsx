@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import SupportFeedbackListClient from './SupportFeedbackListClient'
+import SupportFeedbackPageForm from './SupportFeedbackPageForm'
 import { SupportFeedback } from '@/types/support'
 import { HelpCircle } from 'lucide-react'
 
@@ -41,8 +42,22 @@ export default async function SupportSettingsPage({ params }: Props) {
   const allowedRoles = ['admin', 'supervisor', 'doctor']
   if (!allowedRoles.includes(membership.role)) {
     return (
-      <div className="p-8 text-center text-amber-700 bg-amber-50 rounded-2xl border border-amber-100 font-medium">
-        Acceso denegado. Solo administradores y doctores pueden gestionar los reportes de soporte clínico.
+      <div className="w-full max-w-2xl mx-auto space-y-8 pb-12">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+              <HelpCircle className="w-6 h-6" />
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900">Soporte Clínico</h2>
+          </div>
+          <p className="text-gray-500 mt-1">
+            Reportá cualquier error, bug o sugerencia sobre la aplicación.
+          </p>
+        </div>
+        
+        <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-6">
+          <SupportFeedbackPageForm slug={slug} userRole={membership.role} />
+        </div>
       </div>
     )
   }

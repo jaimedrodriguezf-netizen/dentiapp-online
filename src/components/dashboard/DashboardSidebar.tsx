@@ -14,6 +14,7 @@ import {
   LucideIcon,
   Crown,
   ClipboardList,
+  HelpCircle,
 } from 'lucide-react'
 import { Tooth as ToothIcon } from '@/components/ui/ToothIcon'
 import { APP_VERSION } from '@/lib/version'
@@ -107,6 +108,12 @@ const menuItems: MenuItem[] = [
     icon: Crown, 
     permissionKey: 'view_settings',
     roles: ['admin']
+  },
+  { 
+    href: '/settings/support', 
+    label: 'Soporte', 
+    icon: HelpCircle, 
+    permissionKey: 'view_dashboard' 
   },
   { 
     href: '/settings/profile', 
