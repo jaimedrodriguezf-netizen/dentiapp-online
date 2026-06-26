@@ -46,9 +46,12 @@ export default async function TenantLayout({ children, params }: Props) {
     redirect(`/${slug}/login`)
   }
 
-  // getUser es necesario para refrescar la cookie de sesión
-  const { data: userData } = await supabase.auth.getUser()
-  const user = userData?.user
+  // getSession lee la cookie JWT local (sin HTTP). Suficiente porque
+  // el proxy ya validó que la sesión existe. Si necesitamos datos
+  // del user actualizados contra el servidor (ej: role revocado),
+  // usar getUser() en una server action específica.
+  const { data: sessionData } = await supabase.auth.getSession()
+  const user = sessionData?.session?.user
 
   if (!user) {
     redirect(`/${slug}/login`)

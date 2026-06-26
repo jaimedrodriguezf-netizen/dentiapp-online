@@ -71,9 +71,11 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  // 1. Verificar Sesión
-  const { data: userData } = await supabase.auth.getUser()
-  const user = userData?.user
+  // 1. Verificar Sesión (local, sin HTTP — getSession lee el JWT de la cookie)
+  //    Si necesitás validar contra el servidor (firma revocada, etc.), usá getUser()
+  //    en el server component / server action, NO en el edge middleware.
+  const { data: sessionData } = await supabase.auth.getSession()
+  const user = sessionData?.session?.user
 
   // 2. Redirecciones Inteligentes para Auth
   if (user && (path === '/login' || path === '/register')) {
