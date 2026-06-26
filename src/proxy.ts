@@ -123,7 +123,15 @@ export async function proxy(request: NextRequest) {
         return NextResponse.redirect(new URL(`/login`, request.url))
       }
 
-      const tObj = firstTenant as { id?: string; name?: string; slug?: string; plan?: string }
+      const tObj = firstTenant as {
+        id?: string
+        name?: string
+        slug?: string
+        plan?: string
+        logo_url?: string | null
+        phone?: string | null
+        address?: string | null
+      }
       const tenants: TenantProxyInfo = {
         id: String(tObj.id || ''),
         name: String(tObj.name || ''),
@@ -166,6 +174,9 @@ export async function proxy(request: NextRequest) {
       requestHeaders.set('x-tenant-name', tenants.name)
       requestHeaders.set('x-tenant-role', role)
       requestHeaders.set('x-tenant-plan', plan)
+      requestHeaders.set('x-tenant-logo-url', tObj.logo_url || '')
+      requestHeaders.set('x-tenant-phone', tObj.phone || '')
+      requestHeaders.set('x-tenant-address', tObj.address || '')
       return NextResponse.next({ request: { headers: requestHeaders } })
     }
   }

@@ -13,6 +13,9 @@ interface TenantLayoutData {
   name: string
   slug: string
   plan: 'standard' | 'business'
+  logo_url: string | null
+  phone: string | null
+  address: string | null
 }
 
 interface MembershipLayoutData {
@@ -34,6 +37,9 @@ export default async function TenantLayout({ children, params }: Props) {
   const tenantName = headersList.get('x-tenant-name')
   const tenantRole = headersList.get('x-tenant-role') as MembershipLayoutData['role'] | null
   const tenantPlan = headersList.get('x-tenant-plan') as 'standard' | 'business' | null
+  const tenantLogoUrl = headersList.get('x-tenant-logo-url') || null
+  const tenantPhone = headersList.get('x-tenant-phone') || null
+  const tenantAddress = headersList.get('x-tenant-address') || null
 
   // Si no tenemos headers, el proxy no pasó la validación
   if (!tenantId || !tenantSlug || !tenantName || !tenantRole || !tenantPlan) {
@@ -55,7 +61,10 @@ export default async function TenantLayout({ children, params }: Props) {
       id: tenantId,
       name: tenantName,
       slug: tenantSlug,
-      plan: tenantPlan
+      plan: tenantPlan,
+      logo_url: tenantLogoUrl,
+      phone: tenantPhone,
+      address: tenantAddress
     }
   }
 

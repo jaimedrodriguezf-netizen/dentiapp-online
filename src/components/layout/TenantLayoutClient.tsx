@@ -6,12 +6,16 @@ import { User } from '@supabase/supabase-js'
 import DashboardHeader from '@/components/dashboard/DashboardHeader'
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar'
 import GlobalSearch from '@/components/ui/GlobalSearch'
+import { TenantProvider } from '@/contexts/tenant-context'
 
 interface Tenant {
   id: string
   name: string
   slug: string
   plan: 'standard' | 'business'
+  logo_url: string | null
+  phone: string | null
+  address: string | null
 }
 
 interface Membership {
@@ -47,12 +51,13 @@ export default function TenantLayoutClient({ children, user, membership, permiss
   }
 
   return (
+    <TenantProvider value={membership.tenants}>
     <div className={`drawer ${isSidebarOpen ? 'lg:drawer-open' : ''} min-h-screen bg-base-200`}>
       <input id="dashboard-drawer" type="checkbox" className="drawer-toggle" />
-      
+
       <div className="drawer-content flex flex-col h-screen overflow-hidden">
         <GlobalSearch />
-        
+
         <div className="flex flex-col flex-1 overflow-hidden">
           <DashboardHeader user={user} tenant={membership.tenants}>
             <div className="flex items-center gap-1">
@@ -79,13 +84,14 @@ export default function TenantLayoutClient({ children, user, membership, permiss
 
       <div className="drawer-side z-40">
         <label htmlFor="dashboard-drawer" aria-label="close sidebar" className="drawer-overlay"></label>
-        <DashboardSidebar 
-          role={membership.role} 
-          tenant={membership.tenants} 
+        <DashboardSidebar
+          role={membership.role}
+          tenant={membership.tenants}
           permissions={permissionsMap}
           plan={membership.tenants.plan}
         />
       </div>
     </div>
+    </TenantProvider>
   )
 }

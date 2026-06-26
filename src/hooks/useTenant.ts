@@ -1,44 +1,27 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useTenantContext } from '@/contexts/tenant-context'
 
-interface Tenant {
+export interface Tenant {
   id: string
   name: string
   slug: string
-  logo_url: string | null
-  phone: string | null
-  address: string | null
+  plan: 'standard' | 'business'
+  logo_url?: string | null
+  phone?: string | null
+  address?: string | null
 }
 
+/**
+ * Hook para acceder a la info del tenant actual.
+ *
+ * Lee del TenantContext (provisto por TenantLayoutClient) en lugar de hacer
+ * un fetch extra desde el browser. El contexto se hidrata con los datos que
+ * el server component (layout) ya leyó del header seteado por proxy.ts.
+ *
+ * Si el hook se usa fuera del árbol TenantLayoutClient, retorna null
+ * (caso: la landing pública /(public)/[slug] que no usa este layout).
+ */
 export function useTenant() {
-  const [tenant, setTenant] = useState<Tenant | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    async function fetchTenant() {
-      const slug = window.location.pathname.split('/')[1]
-      if (!slug) {
-        setLoading(false)
-        return
-      }
-
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from('tenants')
-        .select('*')
-        .eq('slug', slug)
-        .single()
-
-      if (data && !error) {
-        setTenant(data)
-      }
-      setLoading(false)
-    }
-
-    fetchTenant()
-  }, [])
-
-  return { tenant, loading }
+  return { tenant: useTenantContext(), loading: false }
 }
