@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect, notFound } from 'next/navigation'
+import { headers } from 'next/headers'
 import TenantLayoutClient from '@/components/layout/TenantLayoutClient'
 
 interface Props {
@@ -20,26 +21,26 @@ interface MembershipLayoutData {
   tenants: TenantLayoutData
 }
 
-interface SupabaseMembershipResponse {
-  role: string
-  tenant_id: string
-  tenants: {
-    id: string
-    name: string
-    slug: string
-    plan: string
-  } | {
-    id: string
-    name: string
-    slug: string
-    plan: string
-  }[] | null
-}
-
 export default async function TenantLayout({ children, params }: Props) {
   const { slug } = await params
   const supabase = await createClient()
 
+  // El proxy ya validó auth y membresía. Leemos del header para evitar
+  // un round-trip extra a Supabase. La RLS protege contra manipulación
+  // de headers porque filtra por auth.uid() en cada query.
+  const headersList = await headers()
+  const tenantId = headersList.get('x-tenant-id')
+  const tenantSlug = headersList.get('x-tenant-slug')
+  const tenantName = headersList.get('x-tenant-name')
+  const tenantRole = headersList.get('x-tenant-role') as MembershipLayoutData['role'] | null
+  const tenantPlan = headersList.get('x-tenant-plan') as 'standard' | 'business' | null
+
+  // Si no tenemos headers, el proxy no pasó la validación
+  if (!tenantId || !tenantSlug || !tenantName || !tenantRole || !tenantPlan) {
+    redirect(`/${slug}/login`)
+  }
+
+  // getUser es necesario para refrescar la cookie de sesión
   const { data: userData } = await supabase.auth.getUser()
   const user = userData?.user
 
@@ -47,31 +48,14 @@ export default async function TenantLayout({ children, params }: Props) {
     redirect(`/${slug}/login`)
   }
 
-  // Get user's tenant membership
-  const { data: membershipRaw } = await supabase
-    .from('tenant_members')
-    .select('role, tenant_id, tenants(id, name, slug, plan)')
-    .eq('user_id', user.id)
-    .eq('tenants.slug', slug)
-    .single()
-
-  if (!membershipRaw) {
-    notFound()
-  }
-
-  const raw = membershipRaw as unknown as SupabaseMembershipResponse
-  const tenantsRaw = Array.isArray(raw.tenants) ? raw.tenants[0] : raw.tenants
-
-  if (!tenantsRaw) notFound()
-
   const membership: MembershipLayoutData = {
-    role: raw.role as MembershipLayoutData['role'],
-    tenant_id: raw.tenant_id,
+    role: tenantRole,
+    tenant_id: tenantId,
     tenants: {
-      id: tenantsRaw.id,
-      name: tenantsRaw.name,
-      slug: tenantsRaw.slug,
-      plan: (tenantsRaw.plan as 'standard' | 'business') || 'standard'
+      id: tenantId,
+      name: tenantName,
+      slug: tenantSlug,
+      plan: tenantPlan
     }
   }
 
@@ -90,9 +74,9 @@ export default async function TenantLayout({ children, params }: Props) {
   }
 
   return (
-    <TenantLayoutClient 
-      user={user} 
-      membership={membership} 
+    <TenantLayoutClient
+      user={user}
+      membership={membership}
       permissionsMap={permissionsMap}
     >
       {children}

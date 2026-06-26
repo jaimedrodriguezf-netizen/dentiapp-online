@@ -112,7 +112,7 @@ export async function proxy(request: NextRequest) {
         .eq('user_id', user.id)
         .eq('tenants.slug', slug)
         .maybeSingle()
-      
+
       if (!membershipRaw) {
         return NextResponse.redirect(new URL(`/login`, request.url))
       }
@@ -131,39 +131,42 @@ export async function proxy(request: NextRequest) {
         plan: (tObj.plan as TenantProxyInfo['plan']) || 'free'
       }
 
-      const membership: MembershipProxyInfo = {
-        role: membershipRaw.role as MembershipProxyInfo['role'],
-        tenant_id: membershipRaw.tenant_id,
-        tenants
-      }
+      const role = membershipRaw.role as MembershipProxyInfo['role']
+      const plan = tenants.plan
 
-      const role = membership.role
-      const plan = membership.tenants.plan
-
-      if (role === 'admin') return supabaseResponse
-
-      // A. RESTRICCIÓN DE ENFERMERÍA (Exclusivo Plan Business)
-      if (tenantModule === 'nursing' && plan !== 'business') {
-        return NextResponse.redirect(new URL(`/${slug}/dashboard`, request.url))
-      }
-
-      // B. RESTRICCIÓN DE CONFIGURACIÓN SENSIBLE (Permisos y Equipo)
-      if (tenantModule === 'settings' && (subPage === 'permissions' || subPage === 'team')) {
-        if (plan !== 'business') {
+      // 5. Gating de módulos por plan + role (admin bypasea todo)
+      if (role !== 'admin') {
+        // A. RESTRICCIÓN DE ENFERMERÍA (Exclusivo Plan Business)
+        if (tenantModule === 'nursing' && plan !== 'business') {
           return NextResponse.redirect(new URL(`/${slug}/dashboard`, request.url))
         }
-        if (role !== 'supervisor') {
-          return NextResponse.redirect(new URL(`/${slug}/dashboard`, request.url))
-        }
-      }
 
-      // C. RESTRICCIÓN DE PLAN STANDARD (Uso personal)
-      if (plan === 'standard' && tenantModule === 'admission') {
-         // El Doctor TAMBIÉN necesita entrar a admisión para ver sus pacientes y turnos
-         if (role !== 'supervisor' && role !== 'doctor') {
+        // B. RESTRICCIÓN DE CONFIGURACIÓN SENSIBLE (Permisos y Equipo)
+        if (tenantModule === 'settings' && (subPage === 'permissions' || subPage === 'team')) {
+          if (plan !== 'business' || role !== 'supervisor') {
             return NextResponse.redirect(new URL(`/${slug}/dashboard`, request.url))
-         }
+          }
+        }
+
+        // C. RESTRICCIÓN DE PLAN STANDARD (Uso personal)
+        if (plan === 'standard' && tenantModule === 'admission') {
+          // El Doctor TAMBIÉN necesita entrar a admisión para ver sus pacientes y turnos
+          if (role !== 'supervisor' && role !== 'doctor') {
+            return NextResponse.redirect(new URL(`/${slug}/dashboard`, request.url))
+          }
+        }
       }
+
+      // 6. Pasar info de tenant al request para que el layout NO re-haga la query
+      //    La RLS en role_permissions y otras queries valida igual contra auth.uid()
+      //    así que un user no puede impersonar otro tenant aunque manipule headers.
+      const requestHeaders = new Headers(request.headers)
+      requestHeaders.set('x-tenant-id', tenants.id)
+      requestHeaders.set('x-tenant-slug', tenants.slug)
+      requestHeaders.set('x-tenant-name', tenants.name)
+      requestHeaders.set('x-tenant-role', role)
+      requestHeaders.set('x-tenant-plan', plan)
+      return NextResponse.next({ request: { headers: requestHeaders } })
     }
   }
 
