@@ -15,7 +15,10 @@ export async function login(formData: FormData) {
   })
 
   if (error) {
-    return { error: error.message }
+    const message = error.message === 'Invalid login credentials' 
+      ? 'Correo o contraseña incorrectos' 
+      : error.message;
+    return { error: message }
   }
 
   // Get user's tenant and redirect to their dashboard
@@ -42,6 +45,7 @@ export async function register(formData: FormData) {
   const email = formData.get('email') as string
   const password = formData.get('password') as string
   const name = formData.get('name') as string
+  const phone = formData.get('phone') as string
 
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -49,6 +53,7 @@ export async function register(formData: FormData) {
     options: {
       data: {
         name,
+        phone,
       },
     },
   })
@@ -59,13 +64,37 @@ export async function register(formData: FormData) {
 
   // Create tenant automatically
   if (data.user) {
-    const slug = name
+    const baseSlug = name
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '')
       .slice(0, 30) || `user-${data.user.id.slice(0, 8)}`
+
+    // Validar unicidad del slug ANTES del INSERT para evitar el 23505 silencioso.
+    // Si el slug base está tomado, agregar sufijo numérico: foo-clinica-2, foo-clinica-3, ...
+    let slug = baseSlug
+    let attempts = 0
+    const MAX_ATTEMPTS = 50
+
+    while (attempts < MAX_ATTEMPTS) {
+      const { data: existing } = await supabase
+        .from('tenants')
+        .select('id')
+        .eq('slug', slug)
+        .maybeSingle()
+
+      if (!existing) break
+
+      attempts++
+      slug = `${baseSlug}-${attempts + 1}`
+    }
+
+    if (attempts >= MAX_ATTEMPTS) {
+      // Fallback extremo: usar UUID corto
+      slug = `${baseSlug}-${data.user.id.slice(0, 8)}`
+    }
 
     const { data: tenant, error: tenantError } = await supabase
       .from('tenants')
@@ -77,8 +106,12 @@ export async function register(formData: FormData) {
       .select()
       .single()
 
-    if (tenantError && tenantError.code !== '23505') {
+    if (tenantError) {
+      // Solo llegamos acá por race condition (otro user creó el mismo slug
+      // entre nuestro check y el INSERT). El trigger también podría haber
+      // rechazado si plan != free|standard.
       console.error('Tenant creation error:', tenantError)
+      return { error: 'No pudimos crear tu clínica. Por favor intentá de nuevo.' }
     }
 
     if (tenant) {
@@ -88,8 +121,6 @@ export async function register(formData: FormData) {
         role: 'doctor', // El creador en plan Standard es un Doctor
       })
       redirect(`/${tenant.slug}/dashboard`)
-    } else {
-      redirect('/onboarding')
     }
   }
 
