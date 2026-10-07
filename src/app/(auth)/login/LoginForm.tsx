@@ -1,38 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { login } from '../actions'
 import { Tooth } from '@/components/ui/ToothIcon'
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton'
-import { Eye, EyeOff, Loader2, Mail, Lock, ShieldCheck, Sparkles, ArrowRight, X } from 'lucide-react'
+import { ShieldCheck, Sparkles, ArrowRight, X } from 'lucide-react'
 import { APP_VERSION } from '@/lib/version'
 
 export default function LoginForm() {
-  const router = useRouter()
   const searchParams = useSearchParams()
   const redirectUrl = searchParams.get('redirect')
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(searchParams.get('error'))
-  const [showPassword, setShowPassword] = useState(false)
-
-  async function handleSubmit(formData: FormData) {
-    setLoading(true)
-    setError(null)
-
-    const result = await login(formData)
-
-    if (result?.error) {
-      setError(result.error)
-      setLoading(false)
-      return
-    }
-
-    if (redirectUrl) {
-      router.push(redirectUrl)
-    }
-  }
 
   return (
     <div className="min-h-screen bg-white flex flex-col lg:flex-row overflow-hidden">
@@ -78,7 +57,7 @@ export default function LoginForm() {
         </div>
       </div>
 
-      {/* Right side - Login form */}
+      {/* Right side - Login */}
       <div className="flex-1 flex items-center justify-center p-6 md:p-12 bg-gray-50/50">
         <div className="w-full max-w-md">
           {/* Mobile Header */}
@@ -91,7 +70,7 @@ export default function LoginForm() {
 
           <div className="bg-white p-8 md:p-12 rounded-[40px] shadow-2xl shadow-blue-900/5 border border-gray-100">
             <div className="mb-10 text-center lg:text-left">
-              <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tight">Bienvenido</h1>
+              <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tight">Iniciar Sesión</h1>
               <p className="text-gray-500 font-medium mt-2">Accedé a tu panel administrativo</p>
             </div>
 
@@ -102,81 +81,24 @@ export default function LoginForm() {
               </div>
             )}
 
-            <form action={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5" /> Email del Profesional
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="ejemplo@clínica.com"
-                  className="w-full rounded-2xl border-2 border-gray-100 bg-gray-50/30 px-5 py-4 text-sm font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
-                  required
-                  autoComplete="email"
-                />
-              </div>
+            <div className="space-y-6">
+              <GoogleSignInButton
+                text="Continuar con Google"
+                redirectTo={redirectUrl}
+                onError={(err) => setError(err)}
+              />
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5" /> Contraseña
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    placeholder="••••••••"
-                    className="w-full rounded-2xl border-2 border-gray-100 bg-gray-50/30 px-5 py-4 pr-14 text-sm font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
-                    required
-                    autoComplete="current-password"
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-blue-600 transition-colors"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full rounded-[24px] bg-blue-600 px-8 py-5 text-lg font-black text-white hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 active:scale-[0.98]"
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-6 h-6 animate-spin" />
-                    ACCEDIENDO...
-                  </>
-                ) : (
-                  <>
-                    INICIAR SESIÓN
-                    <ArrowRight className="w-5 h-5" />
-                  </>
-                )}
-              </button>
-            </form>
-
-            <div className="flex items-center gap-4 my-8">
-              <div className="flex-1 h-px bg-gray-100"></div>
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">o continuá con</span>
-              <div className="flex-1 h-px bg-gray-100"></div>
+              <p className="text-center text-xs text-gray-400">
+                Acceso seguro y unificado mediante tu cuenta de Google. Sin contraseñas que recordar.
+              </p>
             </div>
 
-            <GoogleSignInButton
-              text="Continuar con Google"
-              redirectTo={redirectUrl}
-              onError={(err) => setError(err)}
-            />
-
-            <p className="text-center text-gray-500 font-medium text-sm mt-8">
+            <div className="border-t border-gray-100 mt-10 pt-8 text-center text-gray-500 font-medium text-sm">
               ¿No tenés cuenta?{' '}
               <Link href="/register" className="text-blue-600 font-black uppercase tracking-tight hover:text-blue-800 transition-colors ml-1">
                 Registrate Gratis
               </Link>
-            </p>
+            </div>
           </div>
           
           <p className="text-center mt-8 text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">

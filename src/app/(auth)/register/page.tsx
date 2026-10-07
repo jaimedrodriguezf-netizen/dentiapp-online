@@ -2,31 +2,13 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { register } from '../actions'
 import { Tooth } from '@/components/ui/ToothIcon'
 import GoogleSignInButton from '@/components/auth/GoogleSignInButton'
 import { APP_VERSION } from '@/lib/version'
-import { Eye, EyeOff, Loader2, User, Mail, Lock, ShieldCheck, Sparkles, ArrowRight, X } from 'lucide-react'
+import { ShieldCheck, Sparkles, ArrowRight, User, X } from 'lucide-react'
 
 export default function RegisterPage() {
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showPassword, setShowPassword] = useState(false)
-
-  async function handleSubmit(formData: FormData) {
-    setLoading(true)
-    setError(null)
-
-    const result = await register(formData)
-
-    if (result?.error) {
-      setError(result.error)
-      setLoading(false)
-      return
-    }
-
-    // register() redirects on success
-  }
 
   return (
     <div className="min-h-screen bg-white flex flex-col lg:flex-row overflow-hidden">
@@ -50,7 +32,7 @@ export default function RegisterPage() {
               <span className="text-blue-200">clínica hoy.</span>
             </h2>
             <p className="text-xl text-blue-100 font-medium leading-relaxed opacity-90">
-              Unite a la comunidad de profesionales que están transformando la odontología digital con **DentiApp Online**.
+              Unite a la comunidad de profesionales que están transformando la odontología digital con <strong>DentiApp Online</strong>.
             </p>
           </div>
 
@@ -72,7 +54,7 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      {/* Right side - Register form */}
+      {/* Right side - Register */}
       <div className="flex-1 flex items-center justify-center p-6 md:p-12 bg-gray-50/50">
         <div className="w-full max-w-md">
           {/* Mobile Header */}
@@ -96,95 +78,23 @@ export default function RegisterPage() {
               </div>
             )}
 
-            <form action={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5" /> Nombre Completo
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  placeholder="Dr. Juan Pérez"
-                  className="w-full rounded-2xl border-2 border-gray-100 bg-gray-50/30 px-5 py-4 text-sm font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
-                  required
-                  autoComplete="name"
-                />
-              </div>
+            <div className="space-y-6">
+              <GoogleSignInButton
+                text="Registrarse con Google"
+                onError={(err) => setError(err)}
+              />
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5" /> Email Profesional
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="tu@email.com"
-                  className="w-full rounded-2xl border-2 border-gray-100 bg-gray-50/30 px-5 py-4 text-sm font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
-                  required
-                  autoComplete="email"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5" /> Contraseña
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    placeholder="Mínimo 6 caracteres"
-                    className="w-full rounded-2xl border-2 border-gray-100 bg-gray-50/30 px-5 py-4 pr-14 text-sm font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
-                    minLength={6}
-                    required
-                    autoComplete="new-password"
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-blue-600 transition-colors"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full rounded-[24px] bg-blue-600 px-8 py-5 text-lg font-black text-white hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 active:scale-[0.98]"
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-6 h-6 animate-spin" />
-                    CREANDO CUENTA...
-                  </>
-                ) : (
-                  <>
-                    REGISTRARME AHORA
-                    <ArrowRight className="w-5 h-5" />
-                  </>
-                )}
-              </button>
-            </form>
-
-            <div className="flex items-center gap-4 my-8">
-              <div className="flex-1 h-px bg-gray-100"></div>
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">o registrate con</span>
-              <div className="flex-1 h-px bg-gray-100"></div>
+              <p className="text-center text-xs text-gray-400">
+                Al registrarte con Google creás tu consultorio de forma instantánea y segura.
+              </p>
             </div>
 
-            <GoogleSignInButton
-              text="Registrarse con Google"
-              onError={(err) => setError(err)}
-            />
-
-            <p className="text-center text-gray-500 font-medium text-sm mt-8">
+            <div className="border-t border-gray-100 mt-10 pt-8 text-center text-gray-500 font-medium text-sm">
               ¿Ya tenés cuenta?{' '}
               <Link href="/login" className="text-blue-600 font-black uppercase tracking-tight hover:text-blue-800 transition-colors ml-1">
                 Iniciar Sesión
               </Link>
-            </p>
+            </div>
           </div>
           
           <p className="text-center mt-8 text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">

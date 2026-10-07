@@ -1,41 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter, useParams } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { useParams } from 'next/navigation'
 import { Tooth } from '@/components/ui/ToothIcon'
-import { Mail, Lock, Loader2, ArrowRight, X } from 'lucide-react'
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton'
+import { X } from 'lucide-react'
 import { APP_VERSION } from '@/lib/version'
 
 export default function TenantLoginPage() {
-  const router = useRouter()
   const params = useParams()
   const slug = (params.slug as string) || ''
-  const supabase = createClient()
-  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  async function handleSubmit(formData: FormData) {
-    setLoading(true)
-    setError(null)
-
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (signInError) {
-      setError(signInError.message)
-      setLoading(false)
-      return
-    }
-
-    router.refresh()
-    router.push(`/${slug}/dashboard`)
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
@@ -56,51 +31,17 @@ export default function TenantLoginPage() {
             </div>
           )}
 
-          <form action={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5" /> Email
-              </label>
-              <input
-                type="email"
-                name="email"
-                placeholder="tu@email.com"
-                className="w-full rounded-2xl border-2 border-gray-100 bg-gray-50/30 px-5 py-4 text-sm font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
-                required
-              />
-            </div>
+          <div className="space-y-6">
+            <GoogleSignInButton
+              text="Continuar con Google"
+              redirectTo={`/${slug}/dashboard`}
+              onError={(err) => setError(err)}
+            />
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5" /> Contraseña
-              </label>
-              <input
-                type="password"
-                name="password"
-                placeholder="••••••••"
-                className="w-full rounded-2xl border-2 border-gray-100 bg-gray-50/30 px-5 py-4 text-sm font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="w-full rounded-[24px] bg-blue-600 px-8 py-5 text-lg font-black text-white hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/30 disabled:opacity-50 flex items-center justify-center gap-3 active:scale-[0.98]"
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-6 h-6 animate-spin" />
-                  INICIANDO...
-                </>
-              ) : (
-                <>
-                  ENTRAR
-                  <ArrowRight className="w-5 h-5" />
-                </>
-              )}
-            </button>
-          </form>
+            <p className="text-center text-xs text-gray-400">
+              Iniciá sesión con tu cuenta de Google asociada al equipo de esta clínica.
+            </p>
+          </div>
 
           <p className="text-center mt-10 text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">
             DentiApp Online v{APP_VERSION}
