@@ -322,6 +322,25 @@ export default function PrintContent({ record, teeth, prescriptions, sessions, s
   const splittedFirstName = splitName(record.patients?.first_name)
   const splittedLastName = splitName(record.patients?.last_name)
 
+  const diagnosesList: DiagnosisData[] = (() => {
+    if (!record.diagnosis) return []
+    if (Array.isArray(record.diagnosis)) return record.diagnosis
+    return [record.diagnosis]
+  })()
+
+  const openingTime = (() => {
+    const raw = (record as Record<string, unknown>).created_at
+    if (typeof raw === 'string') {
+      try {
+        const d = new Date(raw)
+        return d.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', hour12: false })
+      } catch {
+        return '09:00'
+      }
+    }
+    return '09:00'
+  })()
+
   return (
     <div>
       {/* Loader de PDF */}
@@ -1222,11 +1241,99 @@ export default function PrintContent({ record, teeth, prescriptions, sessions, s
               </tbody>
             </table>
 
-            {/* SECCIÓN N: EVOLUCIÓN Y TRATAMIENTO */}
+            {/* SECCIÓN N: DIAGNÓSTICO (CIE-10) — NORMA OFICIAL MSP */}
             <table>
               <thead>
                 <tr>
-                  <th colSpan={5} className="section-title">N. Evolución y Tratamiento</th>
+                  <th colSpan={64} className="section-title">N. Diagnóstico</th>
+                </tr>
+                <tr className="bg-[#f1f5f9] font-bold text-[6.8px] text-center uppercase">
+                  <th colSpan={4} className="border border-black py-0.5">No.</th>
+                  <th colSpan={42} className="border border-black py-0.5 text-left pl-2">Diagnóstico Clínico</th>
+                  <th colSpan={10} className="border border-black py-0.5">CIE-10</th>
+                  <th colSpan={4} className="border border-black py-0.5">PRE</th>
+                  <th colSpan={4} className="border border-black py-0.5">DEF</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: Math.max(3, diagnosesList.length) }).map((_, idx) => {
+                  const diag = diagnosesList[idx]
+                  const diagTypeStr = (diag?.type || '').toLowerCase()
+                  const isPre = diagTypeStr.includes('pre')
+                  const isDef = diagTypeStr.includes('def') || (!isPre && !!diag?.code)
+                  return (
+                    <tr key={idx} className="font-bold text-[7.5px] h-[18px]">
+                      <td colSpan={4} className="border border-black text-center py-0.5">{idx + 1}</td>
+                      <td colSpan={42} className="border border-black px-2 py-0.5 truncate text-[7.5px]">
+                        {diag ? (diag.description || diag.text || '—') : '—'}
+                      </td>
+                      <td colSpan={10} className="border border-black text-center py-0.5 font-mono text-[7.5px]">
+                        {diag?.code || '—'}
+                      </td>
+                      <td colSpan={4} className="border border-black text-center py-0.5 font-black text-[9px]">
+                        {isPre ? 'X' : ''}
+                      </td>
+                      <td colSpan={4} className="border border-black text-center py-0.5 font-black text-[9px]">
+                        {isDef ? 'X' : ''}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+
+            {/* SECCIÓN O: DATOS DEL PROFESIONAL RESPONSABLE — NORMA OFICIAL MSP */}
+            <table>
+              <thead>
+                <tr>
+                  <th colSpan={64} className="section-title">O. Datos del Profesional Responsable</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colSpan={12} className="bg-[#f1f5f9] border border-black">
+                    <div className="label-sub">Fecha de Apertura</div>
+                  </td>
+                  <td colSpan={8} className="bg-[#f1f5f9] border border-black">
+                    <div className="label-sub">Hora</div>
+                  </td>
+                  <td colSpan={24} className="bg-[#f1f5f9] border border-black">
+                    <div className="label-sub">Nombres del Profesional</div>
+                  </td>
+                  <td colSpan={10} className="bg-[#f1f5f9] border border-black">
+                    <div className="label-sub">Código / Cédula MSP</div>
+                  </td>
+                  <td colSpan={10} className="bg-[#f1f5f9] border border-black text-center">
+                    <div className="label-sub">Firma y Sello</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td colSpan={12} className="text-center font-bold text-[8px] py-1 border border-black">
+                    {record.opening_date || new Date().toISOString().split('T')[0]}
+                  </td>
+                  <td colSpan={8} className="text-center font-bold text-[8px] py-1 border border-black">
+                    {openingTime}
+                  </td>
+                  <td colSpan={24} className="text-center font-bold text-[8px] py-1 border border-black uppercase truncate">
+                    {tenant?.name ? `Dr(a). Odontólogo — ${tenant.name}` : 'Odontólogo Tratante'}
+                  </td>
+                  <td colSpan={10} className="text-center font-bold text-[8px] py-1 border border-black font-mono">
+                    {((record as Record<string, unknown>).professional_code as string) || 'MSP-ODON'}
+                  </td>
+                  <td colSpan={10} className="text-center py-0.5 border border-black">
+                    <div className="h-5 flex items-center justify-center text-[6.5px] font-mono text-gray-500 uppercase">
+                      Firma Registrada
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* SECCIÓN P: TRATAMIENTO Y EVOLUCIÓN — NORMA OFICIAL MSP */}
+            <table>
+              <thead>
+                <tr>
+                  <th colSpan={5} className="section-title">P. Planes de Tratamiento y Evolución</th>
                 </tr>
                 <tr className="bg-[#f1f5f9] font-bold text-[6.8px] text-center">
                   <th className="border border-black py-1 w-[8%]">Sesión</th>
@@ -1273,12 +1380,12 @@ export default function PrintContent({ record, teeth, prescriptions, sessions, s
               </tbody>
             </table>
 
-            {/* SECCIÓN O: PRESCRIPCIÓN Y FARMACOTERAPIA */}
+            {/* ANEXO: PRESCRIPCIÓN Y FARMACOTERAPIA */}
             {prescriptions.length > 0 ? (
               <table>
                 <thead>
                   <tr>
-                    <th colSpan={4} className="section-title">O. Prescripción (Farmacoterapia)</th>
+                    <th colSpan={4} className="section-title">Prescripción y Farmacoterapia</th>
                   </tr>
                   <tr className="bg-[#f1f5f9] font-bold text-[6.8px] text-center">
                     <th className="border border-black py-1 w-[40%]">Medicamento / Presentación</th>
@@ -1304,7 +1411,7 @@ export default function PrintContent({ record, teeth, prescriptions, sessions, s
               <table>
                 <thead>
                   <tr>
-                    <th className="section-title">O. Prescripción (Farmacoterapia)</th>
+                    <th className="section-title">Prescripción y Farmacoterapia</th>
                   </tr>
                 </thead>
                 <tbody>
