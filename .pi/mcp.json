@@ -2,7 +2,10 @@
   "mcpServers": {
     "supabase": {
       "url": "https://mcp.supabase.com/mcp",
-      "description": "Supabase MCP server for database queries, schema inspections, documentation search, and management"
+      "headers": {
+        "Authorization": "!node -e \"const fs=require('fs');const c=fs.readFileSync('.env.local','utf8');const m=c.match(/SUPABASE_ACCESS_TOKEN=(.+)/);if(m)console.log('Bearer '+m[1].trim());\""
+      },
+      "description": "Supabase MCP server for database management, migrations, documentation search, and project operations"
     }
   }
 }
