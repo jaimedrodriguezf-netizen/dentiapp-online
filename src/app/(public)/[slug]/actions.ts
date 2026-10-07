@@ -3,6 +3,42 @@
 import { createClient } from '@/lib/supabase/server'
 
 export async function bookAppointment(slug: string, _prevState: unknown, formData: FormData) {
+  const name = String(formData.get('name') || '').trim()
+  const phone = String(formData.get('phone') || '').trim()
+  const emailRaw = formData.get('email') ? String(formData.get('email')).trim() : null
+  const date = String(formData.get('date') || '').trim()
+  const time = String(formData.get('time') || '').trim()
+  const reasonRaw = formData.get('reason') ? String(formData.get('reason')).trim() : null
+
+  if (!name) {
+    return { error: 'El nombre es requerido' }
+  }
+  if (name.length > 100) {
+    return { error: 'El nombre no puede superar los 100 caracteres' }
+  }
+
+  if (!phone) {
+    return { error: 'El teléfono es requerido' }
+  }
+  if (phone.length > 30) {
+    return { error: 'El teléfono no puede superar los 30 caracteres' }
+  }
+
+  if (emailRaw && (emailRaw.length > 100 || !emailRaw.includes('@'))) {
+    return { error: 'El correo electrónico no es válido' }
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return { error: 'Formato de fecha inválido' }
+  }
+
+  if (!/^\d{2}:\d{2}$/.test(time)) {
+    return { error: 'Formato de hora inválido' }
+  }
+
+  const email = emailRaw || null
+  const reason = reasonRaw ? reasonRaw.slice(0, 500) : null
+
   const supabase = await createClient()
 
   const { data: tenant } = await supabase
@@ -15,12 +51,12 @@ export async function bookAppointment(slug: string, _prevState: unknown, formDat
 
   const { data, error } = await supabase.rpc('book_appointment', {
     p_tenant_id: tenant.id,
-    p_name: formData.get('name') as string,
-    p_phone: formData.get('phone') as string,
-    p_email: formData.get('email') as string || null,
-    p_date: formData.get('date') as string,
-    p_time: formData.get('time') as string,
-    p_reason: formData.get('reason') as string || null,
+    p_name: name,
+    p_phone: phone,
+    p_email: email,
+    p_date: date,
+    p_time: time,
+    p_reason: reason,
   })
 
   if (error) return { error: error.message }
