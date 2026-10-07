@@ -28,3 +28,7 @@ Object.defineProperty(globalThis, 'IntersectionObserver', {
   configurable: true,
   value: MockIntersectionObserver,
 })
+
+process.env.NEXT_PUBLIC_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://test.supabase.co'
+process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 'test-key'
+

@@ -38,6 +38,7 @@ interface DashboardSidebarProps {
   tenant: Tenant
   permissions?: Record<string, boolean>
   plan?: string
+  onNavigate?: () => void
 }
 
 const menuItems: MenuItem[] = [
@@ -116,13 +117,20 @@ const menuItems: MenuItem[] = [
   },
 ]
 
-export default function DashboardSidebar({ role, tenant, permissions = {}, plan = 'standard' }: DashboardSidebarProps) {
+export default function DashboardSidebar({
+  role,
+  tenant,
+  permissions = {},
+  plan = 'standard',
+  onNavigate,
+}: DashboardSidebarProps) {
   const pathname = usePathname()
   const params = useParams()
   const slug = (params.slug as string) || ''
 
-  const closeDrawer = () => {
-    const drawer = document.getElementById('dashboard-drawer') as HTMLInputElement
+  const handleItemClick = () => {
+    onNavigate?.()
+    const drawer = document.getElementById('dashboard-drawer') as HTMLInputElement | null
     if (drawer) drawer.checked = false
   }
 
@@ -137,7 +145,7 @@ export default function DashboardSidebar({ role, tenant, permissions = {}, plan 
   return (
     <aside className="w-64 bg-base-100 h-full shadow-xl flex flex-col border-r border-base-200">
       <div className="p-4 border-b border-base-200">
-        <Link href={`/${slug}/dashboard`} onClick={closeDrawer} className="flex items-center gap-3">
+        <Link href={`/${slug}/dashboard`} onClick={handleItemClick} className="flex items-center gap-3">
           <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
             <ToothIcon className="w-6 h-6 text-primary" />
           </div>
@@ -165,7 +173,7 @@ export default function DashboardSidebar({ role, tenant, permissions = {}, plan 
               <Link
                 key={item.href}
                 href={fullPath}
-                onClick={closeDrawer}
+                onClick={handleItemClick}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold transition-all ${
                   isActive
                     ? 'bg-primary text-primary-content shadow-lg shadow-primary/20'

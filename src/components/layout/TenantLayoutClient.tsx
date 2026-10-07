@@ -12,7 +12,7 @@ interface Tenant {
   id: string
   name: string
   slug: string
-  plan: 'standard' | 'business'
+  plan: 'free' | 'standard' | 'business'
   logo_url: string | null
   phone: string | null
   address: string | null
@@ -35,27 +35,42 @@ export default function TenantLayoutClient({ children, user, membership, permiss
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
   // Initialize from localStorage in a way that avoids SSR issues.
-  // This triggers a cascading render but it is necessary for local storage hydration.
+  // Safely read and update without throwing in private/iframe modes.
   useEffect(() => {
-    const saved = localStorage.getItem('sidebar-open')
-    if (saved !== null) {
-      const isOpen = saved === 'true'
-      setIsSidebarOpen((prev) => (prev !== isOpen ? isOpen : prev)) // eslint-disable-line react-hooks/set-state-in-effect
+    try {
+      const saved = localStorage.getItem('sidebar-open')
+      if (saved !== null) {
+        const isOpen = saved === 'true'
+        setIsSidebarOpen((prev) => (prev !== isOpen ? isOpen : prev)) // eslint-disable-line react-hooks/set-state-in-effect
+      }
+    } catch {
+      // Storage access blocked or unavailable
     }
   }, [])
 
   const toggleSidebar = () => {
     const nextState = !isSidebarOpen
     setIsSidebarOpen(nextState)
-    localStorage.setItem('sidebar-open', nextState.toString())
+    try {
+      localStorage.setItem('sidebar-open', nextState.toString())
+    } catch {
+      // Storage access blocked or unavailable
+    }
+  }
+
+  const closeMobileDrawer = () => {
+    const drawer = document.getElementById('dashboard-drawer') as HTMLInputElement | null
+    if (drawer) {
+      drawer.checked = false
+    }
   }
 
   return (
     <TenantProvider value={membership.tenants}>
-    <div className={`drawer ${isSidebarOpen ? 'lg:drawer-open' : ''} min-h-screen bg-base-200`}>
+    <div className={`drawer ${isSidebarOpen ? 'lg:drawer-open' : ''} min-h-screen bg-base-200 transition-colors duration-200`}>
       <input id="dashboard-drawer" type="checkbox" className="drawer-toggle" />
 
-      <div className="drawer-content flex flex-col h-screen overflow-hidden">
+      <div className="drawer-content flex flex-col h-screen overflow-hidden transition-[padding,margin] duration-200 ease-in-out">
         <GlobalSearch />
 
         <div className="flex flex-col flex-1 overflow-hidden">
@@ -89,6 +104,7 @@ export default function TenantLayoutClient({ children, user, membership, permiss
           tenant={membership.tenants}
           permissions={permissionsMap}
           plan={membership.tenants.plan}
+          onNavigate={closeMobileDrawer}
         />
       </div>
     </div>
