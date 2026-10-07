@@ -1,16 +1,9 @@
 'use client'
 
 import { useTenantContext } from '@/contexts/tenant-context'
+import type { Clinic } from '@/types/clinic'
 
-export interface Tenant {
-  id: string
-  name: string
-  slug: string
-  plan: 'free' | 'standard' | 'business'
-  logo_url?: string | null
-  phone?: string | null
-  address?: string | null
-}
+export type Tenant = Clinic
 
 /**
  * Hook para acceder a la info del tenant actual.

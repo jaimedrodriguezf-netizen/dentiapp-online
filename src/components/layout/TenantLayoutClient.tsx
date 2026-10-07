@@ -7,22 +7,9 @@ import DashboardHeader from '@/components/dashboard/DashboardHeader'
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar'
 import GlobalSearch from '@/components/ui/GlobalSearch'
 import { TenantProvider } from '@/contexts/tenant-context'
+import type { ClinicMembership } from '@/types/clinic'
 
-interface Tenant {
-  id: string
-  name: string
-  slug: string
-  plan: 'free' | 'standard' | 'business'
-  logo_url: string | null
-  phone: string | null
-  address: string | null
-}
-
-interface Membership {
-  role: 'admin' | 'supervisor' | 'doctor' | 'nurse' | 'receptionist'
-  tenant_id: string
-  tenants: Tenant
-}
+type Membership = ClinicMembership
 
 interface Props {
   children: React.ReactNode

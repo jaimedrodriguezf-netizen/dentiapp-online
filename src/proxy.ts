@@ -79,6 +79,10 @@ export async function proxy(request: NextRequest) {
   const user = sessionData?.session?.user
 
   // 2. Redirecciones Inteligentes para Auth y /dashboard raíz
+  if (!user && path === '/dashboard') {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
   if (user && (path === '/login' || path === '/register' || path === '/dashboard')) {
     const { data: membershipRaw } = await supabase
       .from('tenant_members')
