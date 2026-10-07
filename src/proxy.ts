@@ -33,9 +33,10 @@ export async function proxy(request: NextRequest) {
   // importing components/modules from external routes files without bundle issues.
   const tenantModules = ['dashboard', 'admission', 'nursing', 'odontology', 'settings']
   const isAuthRoute = path === '/login' || path === '/register' || path === '/dashboard'
+  const normalizedModule = pathSegments[1]?.toLowerCase()
   const isProtectedTenantRoute =
     pathSegments.length >= 2 &&
-    (tenantModules.includes(pathSegments[1]) || path.includes('/settings/'))
+    (tenantModules.includes(normalizedModule) || path.toLowerCase().includes('/settings/'))
   const requiresAuth = isAuthRoute || isProtectedTenantRoute
 
   // Check if a Supabase auth cookie exists to determine if session refresh is needed
@@ -99,10 +100,10 @@ export async function proxy(request: NextRequest) {
   // 3. PROTECCIÓN DE RUTAS DEL TENANT (/[slug]/...)
   if (pathSegments.length >= 2) {
     const slug = pathSegments[0]
-    const tenantModule = pathSegments[1]
-    const subPage = pathSegments[2]
+    const tenantModule = pathSegments[1]?.toLowerCase()
+    const subPage = pathSegments[2]?.toLowerCase()
 
-    if (tenantModules.includes(tenantModule) || path.includes('/settings/')) {
+    if (tenantModules.includes(tenantModule) || path.toLowerCase().includes('/settings/')) {
       if (!user) {
         return NextResponse.redirect(new URL(`/login`, request.url))
       }
