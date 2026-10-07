@@ -8,9 +8,9 @@
 - Optimizar configuración de Next.js (`compress`, `poweredByHeader`, `images`).
 
 ## Tasks
-- [ ] Task 1: Crear `getCachedTenantId` con React cache y headers para eliminar roundtrips repetitivos a la BD.
-- [ ] Task 2: Optimizar `DashboardPage` eliminando llamadas en serie a `getUser()` y cargando datos en paralelo.
-- [ ] Task 3: Crear migración `013_performance_indexes.sql` con índices críticos para Postgres y RLS.
-- [ ] Task 4: Implementar `src/app/(tenant)/[slug]/error.tsx` como Error Boundary resiliente.
-- [ ] Task 5: Crear utilidad de fecha segura (`getLocalDateString`) y resolver desfasajes horarios.
+- [x] Task 1: Crear `getCachedTenantId` con React cache y headers para eliminar roundtrips repetitivos a la BD. (commit: 74b94a0)
+- [x] Task 2: Optimizar `DashboardPage` eliminando llamadas en serie a `getUser()` y cargando datos en paralelo. (commit: 8ac2e8d)
+- [x] Task 3: Crear migración `013_performance_indexes.sql` con índices críticos para Postgres y RLS. (commit: ec46097)
+- [x] Task 4: Implementar `src/app/(tenant)/[slug]/error.tsx` como Error Boundary resiliente. (commit: 7673cbf)
+- [x] Task 5: Crear utilidad de fecha segura (`getLocalDateString`) y resolver desfasajes horarios. (commit: d327e81)
 - [ ] Task 6: Optimizar `next.config.ts` con compresión y formatos modernos de imágenes.
