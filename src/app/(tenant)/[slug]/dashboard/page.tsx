@@ -1,4 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
+import { headers } from 'next/headers'
+import { getCachedTenantId } from '@/lib/tenant/getTenantId'
 import { 
   Users, 
   CalendarDays, 
@@ -44,24 +46,15 @@ const statusConfig: Record<string, { label: string; color: string; bg: string }>
 
 export default async function DashboardPage({ params }: Props) {
   const { slug } = await params
+  const headersList = await headers()
+  const tenantId = headersList.get('x-tenant-id') || (await getCachedTenantId(slug))
+
+  if (!tenantId) return null
+
   const supabase = await createClient()
-  const { data: userData } = await supabase.auth.getUser()
-  const user = userData?.user
-
-  if (!user) return null
-
-  const { data: membership } = await supabase
-    .from('tenant_members')
-    .select('id, tenant_id, role')
-    .eq('user_id', user.id)
-    .single()
-
-  if (!membership) return null
-
-  const tenantId = membership.tenant_id
   const today = new Date().toISOString().split('T')[0]
 
-  // Cargar datos
+  // Cargar métricas y turnos del día en paralelo
   const [patientsCount, allAppointmentsCount, recordsCount, todayAppointmentsRaw] = await Promise.all([
     supabase.from('patients').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId),
     supabase.from('appointments').select('*', { count: 'exact', head: true })
