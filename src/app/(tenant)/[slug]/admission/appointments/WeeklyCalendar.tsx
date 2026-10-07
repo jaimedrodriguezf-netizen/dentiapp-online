@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { getLocalDateString } from '@/lib/utils/date'
 
 interface Appointment {
   id: string
+  date?: string
   time: string
   status: string
   reason: string | null
@@ -39,12 +40,21 @@ function formatDate(date: Date): string {
 }
 
 const statusColors: Record<string, string> = {
-  scheduled: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-  confirmed: 'bg-green-100 text-green-700 border-green-200',
-  in_progress: 'bg-blue-100 text-blue-700 border-blue-200',
-  completed: 'bg-gray-100 text-gray-500 border-gray-200 line-through',
-  cancelled: 'bg-red-100 text-red-500 border-red-200 line-through',
-  no_show: 'bg-orange-100 text-orange-700 border-orange-200',
+  scheduled: 'bg-amber-50 text-amber-800 border-amber-200',
+  confirmed: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+  in_progress: 'bg-blue-50 text-blue-800 border-blue-200',
+  completed: 'bg-gray-100 text-gray-600 border-gray-200',
+  cancelled: 'bg-rose-50 text-rose-700 border-rose-200 line-through',
+  no_show: 'bg-orange-50 text-orange-800 border-orange-200',
+}
+
+const statusBadgeLabels: Record<string, string> = {
+  scheduled: 'Pendiente',
+  confirmed: 'Confirmado',
+  in_progress: 'En atención',
+  completed: 'Atendido',
+  cancelled: 'Cancelado',
+  no_show: 'No asistió',
 }
 
 export default function WeeklyCalendar({ slug, appointments, currentDate }: Props) {
@@ -72,47 +82,61 @@ export default function WeeklyCalendar({ slug, appointments, currentDate }: Prop
 
   return (
     <div className="space-y-4">
+      {/* Controles de semana */}
       <div className="flex items-center justify-between px-4 md:px-0">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={prevWeek}
-            className="p-2 bg-white border border-gray-100 rounded-xl shadow-sm text-gray-400 hover:text-blue-600 transition-all"
+            className="p-2 bg-white border border-gray-200 rounded-lg shadow-xs text-gray-500 hover:text-blue-600 hover:bg-gray-50 transition-all cursor-pointer"
+            aria-label="Semana anterior"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-4 h-4" />
           </button>
-          <span className="text-sm font-black text-gray-600 uppercase tracking-widest">
+          <span className="text-xs sm:text-sm font-bold text-gray-700 uppercase tracking-wider px-2">
             {days[0].toLocaleDateString('es-EC', { day: 'numeric', month: 'short' })} —{' '}
-            {days[6].toLocaleDateString('es-EC', { day: 'numeric', month: 'short' })}
+            {days[6].toLocaleDateString('es-EC', { day: 'numeric', month: 'short', year: 'numeric' })}
           </span>
           <button
+            type="button"
             onClick={nextWeek}
-            className="p-2 bg-white border border-gray-100 rounded-xl shadow-sm text-gray-400 hover:text-blue-600 transition-all"
+            className="p-2 bg-white border border-gray-200 rounded-lg shadow-xs text-gray-500 hover:text-blue-600 hover:bg-gray-50 transition-all cursor-pointer"
+            aria-label="Semana siguiente"
           >
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className="w-4 h-4" />
           </button>
         </div>
+
+        <Link
+          href={`/${slug}/admission/appointments/new`}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold transition-colors shadow-xs"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Agendar en Semana
+        </Link>
       </div>
 
-      <div className="bg-white border border-gray-100 rounded-[32px] shadow-sm overflow-hidden">
-        {/* Day headers */}
-        <div className="grid grid-cols-7">
+      {/* Grid semanal clínico */}
+      <div className="bg-white border border-gray-200 rounded-xl shadow-xs overflow-hidden mx-4 md:mx-0">
+        {/* Cabecera de días */}
+        <div className="grid grid-cols-7 border-b border-gray-200 bg-gray-50/50">
           {days.map((date, i) => {
             const dateStr = formatDate(date)
             const isToday = dateStr === today
             return (
               <div
-                key={i}
-                className={`p-4 text-center border-r border-gray-50 last:border-r-0 ${
-                  isToday ? 'bg-blue-50/50' : ''
+                key={dateStr}
+                className={`p-3 text-center border-r border-gray-100 last:border-r-0 ${
+                  isToday ? 'bg-blue-50/60' : ''
                 }`}
               >
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                   {DAY_NAMES[i]}
                 </p>
                 <p
-                  className={`text-xl font-black mt-1 ${
+                  className={`text-base font-bold mt-0.5 ${
                     isToday
-                      ? 'text-white bg-blue-600 w-10 h-10 rounded-full flex items-center justify-center mx-auto'
+                      ? 'text-white bg-blue-600 w-7 h-7 rounded-full flex items-center justify-center mx-auto shadow-xs'
                       : 'text-gray-900'
                   }`}
                 >
@@ -123,41 +147,74 @@ export default function WeeklyCalendar({ slug, appointments, currentDate }: Prop
           })}
         </div>
 
-        {/* Appointments grid */}
-        <div className="border-t border-gray-100 p-4 md:p-6">
-          {appointments.length === 0 ? (
-            <div className="text-center py-12">
-              <CalendarDays className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-              <p className="text-gray-400 font-bold">Sin turnos esta semana</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {appointments.slice(0, 10).map((appointment) => {
-                const status = statusColors[appointment.status] || statusColors.scheduled
-                return (
-                  <Link
-                    key={appointment.id}
-                    href={`/${slug}/odontology?patientId=${appointment.patients?.id}`}
-                    className="flex items-center gap-3 p-3 rounded-2xl hover:bg-gray-50 transition-colors group"
-                  >
-                    <span className="text-xs font-black text-gray-400 w-12 shrink-0">
-                      {appointment.time?.slice(0, 5)}
+        {/* Columnas con turnos asignados por día */}
+        <div className="grid grid-cols-1 md:grid-cols-7 divide-y md:divide-y-0 md:divide-x divide-gray-100 min-h-[300px]">
+          {days.map((date) => {
+            const dateStr = formatDate(date)
+            const dayAppointments = appointments.filter((a) => a.date === dateStr)
+            const isToday = dateStr === today
+
+            return (
+              <div
+                key={dateStr}
+                className={`p-2.5 space-y-2 flex flex-col justify-between ${
+                  isToday ? 'bg-blue-50/10' : 'bg-white'
+                }`}
+              >
+                <div className="space-y-1.5 flex-1">
+                  <div className="flex items-center justify-between pb-1 border-b border-gray-100">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase">
+                      {date.toLocaleDateString('es-EC', { day: 'numeric', month: 'short' })}
                     </span>
-                    <span className="flex-1 text-sm font-bold text-gray-900 truncate">
-                      {appointment.patients?.first_name} {appointment.patients?.last_name}
+                    <span className="text-[10px] font-semibold text-gray-500">
+                      {dayAppointments.length} citas
                     </span>
-                    <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest border ${status}`}>
-                      {appointment.status === 'scheduled' ? 'Pendiente' :
-                       appointment.status === 'confirmed' ? 'Confirmado' :
-                       appointment.status === 'in_progress' ? 'En curso' :
-                       appointment.status === 'completed' ? 'Hecho' :
-                       appointment.status === 'cancelled' ? 'Cancelado' : 'No asistió'}
-                    </span>
-                  </Link>
-                )
-              })}
-            </div>
-          )}
+                  </div>
+
+                  {dayAppointments.length === 0 ? (
+                    <div className="py-8 text-center text-gray-300">
+                      <p className="text-[11px] font-medium italic">Sin citas</p>
+                    </div>
+                  ) : (
+                    dayAppointments.map((apt) => {
+                      const statusColor = statusColors[apt.status] || statusColors.scheduled
+                      const statusLabel = statusBadgeLabels[apt.status] || apt.status
+
+                      return (
+                        <Link
+                          key={apt.id}
+                          href={`/${slug}/admission/appointments?date=${dateStr}`}
+                          className={`block p-2 rounded-lg border text-xs transition-all hover:shadow-xs group ${statusColor}`}
+                        >
+                          <div className="flex items-center justify-between text-[10px] font-mono font-bold mb-0.5">
+                            <span>{apt.time?.slice(0, 5)}</span>
+                            <span className="text-[9px] uppercase font-semibold opacity-85">
+                              {statusLabel}
+                            </span>
+                          </div>
+                          <p className="font-semibold text-gray-900 truncate">
+                            {apt.patients?.first_name} {apt.patients?.last_name}
+                          </p>
+                          {apt.reason && (
+                            <p className="text-[10px] text-gray-600 truncate mt-0.5">
+                              {apt.reason}
+                            </p>
+                          )}
+                        </Link>
+                      )
+                    })
+                  )}
+                </div>
+
+                <Link
+                  href={`/${slug}/admission/appointments?date=${dateStr}`}
+                  className="mt-2 block text-center py-1 text-[10px] font-semibold text-blue-600 hover:text-blue-800 bg-gray-50 hover:bg-blue-50/50 rounded border border-gray-100 transition-colors"
+                >
+                  Abrir agenda diaria →
+                </Link>
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>

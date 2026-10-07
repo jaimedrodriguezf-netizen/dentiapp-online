@@ -19,6 +19,7 @@ export interface ValidatedAppointmentInput {
   time: string
   reason: string | null
   status: AppointmentStatus
+  notes?: string | null
 }
 
 type ValidationResult<T> =
@@ -97,6 +98,7 @@ export function validateAppointmentInput(raw: Record<string, unknown>): Validati
   }
 
   const reasonRaw = raw.reason ? String(raw.reason).trim().slice(0, 500) : null
+  const notesRaw = raw.notes ? String(raw.notes).trim().slice(0, 500) : null
   const statusRaw = (raw.status ? String(raw.status).trim() : 'scheduled') as AppointmentStatus
 
   return {
@@ -107,6 +109,7 @@ export function validateAppointmentInput(raw: Record<string, unknown>): Validati
       time,
       reason: reasonRaw || null,
       status: statusRaw,
+      notes: notesRaw || null,
     },
   }
 }

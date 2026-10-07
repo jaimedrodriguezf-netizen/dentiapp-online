@@ -1,9 +1,11 @@
 import Link from 'next/link'
 import { getPatients, createAppointment } from '../../actions'
-import { ArrowLeft, User, Calendar, Clock, ClipboardList, Save, X, AlertCircle, LucideIcon } from 'lucide-react'
+import { ArrowLeft, User, Calendar, Clock, ClipboardList, Save, AlertCircle, LucideIcon } from 'lucide-react'
+import { getLocalDateString } from '@/lib/utils/date'
 
 interface Props {
   params: Promise<{ slug: string }>
+  searchParams: Promise<{ date?: string; patientId?: string }>
 }
 
 interface PatientData {
@@ -13,155 +15,164 @@ interface PatientData {
   cedula: string | null
 }
 
-export default async function NewAppointmentPage({ params }: Props) {
+export default async function NewAppointmentPage({ params, searchParams }: Props) {
   const { slug } = await params
+  const { date: dateParam, patientId: patientIdParam } = await searchParams
+
   const patientsRaw = await getPatients(slug)
   const patients = (patientsRaw as unknown as PatientData[]) || []
 
+  const defaultDate = (dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam))
+    ? dateParam
+    : getLocalDateString()
+
   return (
-    <div className="w-full space-y-6 pb-24 md:pb-12">
-      {/* Header Adaptable */}
-      <div className="flex items-center justify-between bg-base-100 p-4 md:p-0 rounded-2xl md:bg-transparent shadow-sm md:shadow-none sticky top-0 md:relative z-20 mx-4 md:mx-0">
-        <div className="flex items-center gap-3 md:gap-4">
+    <div className="w-full max-w-2xl mx-auto space-y-6 pb-24 md:pb-12">
+      {/* Header */}
+      <div className="flex items-center justify-between pb-4 border-b border-gray-200 px-4 md:px-0">
+        <div className="flex items-center gap-3">
           <Link
-            href={`/${slug}/admission/appointments`}
-            className="p-2 hover:bg-base-200 rounded-full transition-colors"
+            href={`/${slug}/admission/appointments?date=${defaultDate}`}
+            className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 transition-colors"
           >
-            <ArrowLeft className="w-5 h-5 md:w-6 md:h-6 text-gray-500" />
+            <ArrowLeft className="w-5 h-5" />
           </Link>
-          <div className="min-w-0">
-            <h2 className="text-lg md:text-2xl font-black text-gray-900 truncate">Nuevo Turno</h2>
-            <p className="text-[10px] md:text-sm font-bold text-gray-400 uppercase tracking-widest truncate">Agenda de Citas</p>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">
+              Agendar Turno
+            </h1>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Programar nueva cita médica en agenda
+            </p>
           </div>
         </div>
 
         <Link
-          href={`/${slug}/admission/appointments`}
-          className="btn btn-ghost btn-sm rounded-xl font-bold border-gray-200 hidden md:flex"
+          href={`/${slug}/admission/appointments?date=${defaultDate}`}
+          className="text-xs font-semibold text-gray-500 hover:text-gray-700 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
         >
-          <X className="w-4 h-4 mr-2" />
           Cancelar
         </Link>
       </div>
 
-      <form action={async (fd: FormData) => {
-        'use server'
-        await createAppointment(slug, fd)
-      }} className="space-y-6">
-        
-        {/* Card de Selección de Paciente */}
-        <div className="card bg-white border border-gray-100 shadow-sm mx-4 md:mx-0 overflow-hidden rounded-[32px]">
-          <div className="card-body p-6 md:p-8 space-y-6">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                <User className="w-5 h-5" />
-              </div>
-              <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">Paciente</h3>
-            </div>
-
-            {patients.length === 0 ? (
-              <div className="p-6 bg-yellow-50 border-2 border-dashed border-yellow-200 rounded-[32px] flex flex-col items-center text-center">
-                <AlertCircle className="w-8 h-8 text-yellow-500 mb-2" />
-                <p className="text-sm font-bold text-yellow-700 leading-tight">No hay pacientes registrados aún.</p>
-                <Link href={`/${slug}/admission/patients/new`} className="btn btn-warning btn-sm mt-4 rounded-xl font-black">
-                  CREAR PACIENTE AHORA
-                </Link>
-              </div>
-            ) : (
-              <FormGroup label="Seleccionar Paciente *" icon={User}>
-                <select
-                  name="patient_id"
-                  required
-                  className="w-full rounded-2xl border-2 border-gray-100 bg-gray-50/30 px-4 py-3 text-sm font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all appearance-none"
-                >
-                  <option value="">Elegí un paciente de la lista...</option>
-                  {patients.map((patient) => (
-                    <option key={patient.id} value={patient.id}>
-                      {patient.first_name} {patient.last_name} {patient.cedula ? `(${patient.cedula})` : ''}
-                    </option>
-                  ))}
-                </select>
-              </FormGroup>
-            )}
+      <form
+        action={async (fd: FormData) => {
+          'use server'
+          await createAppointment(slug, fd)
+        }}
+        className="space-y-6 px-4 md:px-0"
+      >
+        {/* Paciente */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 shadow-xs space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+            <User className="w-4 h-4 text-blue-600" />
+            <h2 className="text-sm font-bold text-gray-900">Paciente</h2>
           </div>
+
+          {patients.length === 0 ? (
+            <div className="p-6 bg-amber-50 border border-amber-200 rounded-xl flex flex-col items-center text-center space-y-2">
+              <AlertCircle className="w-6 h-6 text-amber-600" />
+              <p className="text-xs font-semibold text-amber-800">
+                Aún no tenés pacientes registrados en la clínica.
+              </p>
+              <Link
+                href={`/${slug}/admission/patients/new`}
+                className="px-3.5 py-1.5 bg-amber-600 text-white text-xs font-semibold rounded-lg hover:bg-amber-700 transition-colors shadow-xs"
+              >
+                Crear Paciente Ahora
+              </Link>
+            </div>
+          ) : (
+            <FormGroup label="Seleccionar Paciente *" icon={User}>
+              <select
+                name="patient_id"
+                required
+                defaultValue={patientIdParam || ''}
+                className="w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all"
+              >
+                <option value="">Elegí un paciente de la lista...</option>
+                {patients.map((patient) => (
+                  <option key={patient.id} value={patient.id}>
+                    {patient.first_name} {patient.last_name}{' '}
+                    {patient.cedula ? `(Cédula: ${patient.cedula})` : ''}
+                  </option>
+                ))}
+              </select>
+            </FormGroup>
+          )}
         </div>
 
-        {/* Card de Fecha y Hora */}
-        <div className="card bg-white border border-gray-100 shadow-sm mx-4 md:mx-0 overflow-hidden rounded-[32px]">
-          <div className="card-body p-6 md:p-8 space-y-6">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
-                <Calendar className="w-5 h-5" />
-              </div>
-              <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">Fecha y Horario</h3>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <FormGroup label="Fecha de la Cita *" icon={Calendar}>
-                <input
-                  type="date" name="date" required
-                  defaultValue={new Date().toISOString().split('T')[0]}
-                  className="w-full rounded-2xl border-2 border-gray-100 bg-gray-50/30 px-4 py-3 text-sm font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
-                />
-              </FormGroup>
-              <FormGroup label="Hora *" icon={Clock}>
-                <input
-                  type="time" name="time" required
-                  defaultValue="09:00"
-                  className="w-full rounded-2xl border-2 border-gray-100 bg-gray-50/30 px-4 py-3 text-sm font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
-                />
-              </FormGroup>
-            </div>
+        {/* Fecha y Hora */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 shadow-xs space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+            <Calendar className="w-4 h-4 text-blue-600" />
+            <h2 className="text-sm font-bold text-gray-900">Horario de Atención</h2>
           </div>
-        </div>
 
-        {/* Card de Motivo */}
-        <div className="card bg-white border border-gray-100 shadow-sm mx-4 md:mx-0 overflow-hidden rounded-[32px]">
-          <div className="card-body p-6 md:p-8 space-y-6">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
-                <ClipboardList className="w-5 h-5" />
-              </div>
-              <h3 className="text-lg font-black text-gray-900 uppercase tracking-tight">Detalles</h3>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FormGroup label="Fecha de la Cita *" icon={Calendar}>
+              <input
+                type="date"
+                name="date"
+                required
+                defaultValue={defaultDate}
+                className="w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all font-mono"
+              />
+            </FormGroup>
 
-            <FormGroup label="Motivo de la consulta" icon={ClipboardList}>
-              <textarea
-                name="reason" rows={3}
-                placeholder="Ej: Control de rutina, dolor agudo, profilaxis..."
-                className="w-full rounded-2xl border-2 border-gray-100 bg-gray-50/30 px-4 py-3 text-sm font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all"
+            <FormGroup label="Hora de Inicio *" icon={Clock}>
+              <input
+                type="time"
+                name="time"
+                required
+                defaultValue="09:00"
+                className="w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all font-mono"
               />
             </FormGroup>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="hidden md:flex gap-4 px-4 md:px-0">
-          <button
-            type="submit"
-            disabled={patients.length === 0}
-            className="btn btn-primary rounded-2xl font-black px-12 h-14 shadow-xl shadow-primary/20 disabled:opacity-50"
-          >
-            <Save className="w-5 h-5 mr-2" />
-            AGENDAR TURNO
-          </button>
+        {/* Motivo y Notas */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 shadow-xs space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+            <ClipboardList className="w-4 h-4 text-blue-600" />
+            <h2 className="text-sm font-bold text-gray-900">Motivo de Consulta</h2>
+          </div>
+
+          <FormGroup label="Procedimiento o motivo previsto" icon={ClipboardList}>
+            <textarea
+              name="reason"
+              rows={3}
+              placeholder="Ej: Limpieza dental profiláctica, dolor agudo en molar 36, control..."
+              className="w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all"
+            />
+          </FormGroup>
+
+          <FormGroup label="Notas internas (Opcional)" icon={ClipboardList}>
+            <input
+              type="text"
+              name="notes"
+              placeholder="Ej: Paciente prefiere anestesia tópica, confirmar por WhatsApp..."
+              className="w-full rounded-xl border border-gray-300 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all"
+            />
+          </FormGroup>
         </div>
 
-        {/* Sticky Mobile Button */}
-        <div className="fixed bottom-6 left-4 right-4 md:hidden z-30 flex gap-3">
+        {/* Botones de acción */}
+        <div className="flex items-center justify-end gap-3 pt-2">
           <Link
-            href={`/${slug}/admission/appointments`}
-            className="flex-1 btn bg-white border-gray-200 rounded-2xl h-14 font-black shadow-xl"
+            href={`/${slug}/admission/appointments?date=${defaultDate}`}
+            className="px-4 py-2.5 text-xs font-semibold text-gray-600 hover:text-gray-800 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
           >
-            ✕ CANCELAR
+            Cancelar
           </Link>
+
           <button
             type="submit"
-            disabled={patients.length === 0}
-            className="flex-[2] btn btn-primary rounded-2xl h-14 font-black shadow-xl shadow-primary/30 disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-6 py-2.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-xs cursor-pointer active:scale-98"
           >
-            <Save className="w-5 h-5 mr-2" />
-            AGENDAR
+            <Save className="w-4 h-4" />
+            Guardar Cita
           </button>
         </div>
       </form>
@@ -169,11 +180,20 @@ export default async function NewAppointmentPage({ params }: Props) {
   )
 }
 
-function FormGroup({ label, icon: Icon, children }: { label: string, icon: LucideIcon, children: React.ReactNode }) {
+function FormGroup({
+  label,
+  icon: Icon,
+  children,
+}: {
+  label: string
+  icon: LucideIcon
+  children: React.ReactNode
+}) {
   return (
     <div className="space-y-1.5">
-      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 flex items-center gap-1.5">
-        <Icon className="w-3 h-3" /> {label}
+      <label className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
+        <Icon className="w-3.5 h-3.5 text-gray-400" />
+        {label}
       </label>
       {children}
     </div>
