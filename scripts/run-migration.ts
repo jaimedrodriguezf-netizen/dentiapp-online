@@ -1,10 +1,32 @@
 import { createClient } from '@supabase/supabase-js'
-import { readFileSync } from 'fs'
+import { readFileSync, existsSync } from 'fs'
 import { resolve } from 'path'
 
-// Este script necesita SERVICE_ROLE_KEY en el environment
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://hevqfjyimtjnxpxrxquy.supabase.co'
+function loadEnvLocal() {
+  const envPath = resolve(process.cwd(), '.env.local')
+  if (existsSync(envPath)) {
+    const lines = readFileSync(envPath, 'utf-8').split('\n')
+    for (const line of lines) {
+      const trimmed = line.trim()
+      if (!trimmed || trimmed.startsWith('#')) continue
+      const [key, ...vals] = trimmed.split('=')
+      if (key && !process.env[key.trim()]) {
+        process.env[key.trim()] = vals.join('=').trim()
+      }
+    }
+  }
+}
+
+loadEnvLocal()
+
+// Este script necesita NEXT_PUBLIC_SUPABASE_URL y SERVICE_ROLE_KEY en el environment
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+if (!supabaseUrl) {
+  console.error('❌ NEXT_PUBLIC_SUPABASE_URL no está definida.')
+  process.exit(1)
+}
 
 if (!serviceRoleKey) {
   console.error('❌ SUPABASE_SERVICE_ROLE_KEY no está definida. Seteala en el .env.local o pasala como variable de entorno.')
