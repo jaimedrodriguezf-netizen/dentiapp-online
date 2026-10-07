@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getCachedTenantId } from '@/lib/tenant/getTenantId'
 import { actionSuccess, actionError } from '@/lib/actions/result'
+import { validatePatientInput, validateAppointmentInput } from '@/lib/validation/patient'
 import type { ActionResult } from '@/types/action'
 
 async function getTenantId(slug: string) {
@@ -25,22 +26,19 @@ export async function getPatients(slug: string) {
 }
 
 export async function createPatient(slug: string, formData: FormData) {
+  const rawInput = Object.fromEntries(formData.entries())
+  const validation = validatePatientInput(rawInput)
+  if (!validation.success) {
+    return { error: validation.error }
+  }
+
   const supabase = await createClient()
   const tenantId = await getTenantId(slug)
   if (!tenantId) return { error: 'No tienes una clínica activa' }
 
   const { error } = await supabase.from('patients').insert({
     tenant_id: tenantId,
-    first_name: formData.get('first_name') as string,
-    last_name: formData.get('last_name') as string,
-    cedula: formData.get('cedula') as string,
-    birth_date: formData.get('birth_date') as string || null,
-    gender: formData.get('gender') as string || null,
-    phone: formData.get('phone') as string,
-    email: formData.get('email') as string,
-    address: formData.get('address') as string,
-    status: (formData.get('status') as string) || 'active',
-    observations: formData.get('observations') as string || null,
+    ...validation.data,
   })
 
   if (error) return { error: error.message }
@@ -64,24 +62,19 @@ export async function getPatient(slug: string, patientId: string) {
 }
 
 export async function updatePatient(slug: string, patientId: string, formData: FormData) {
+  const rawInput = Object.fromEntries(formData.entries())
+  const validation = validatePatientInput(rawInput)
+  if (!validation.success) {
+    return { error: validation.error }
+  }
+
   const supabase = await createClient()
   const tenantId = await getTenantId(slug)
   if (!tenantId) return { error: 'No tienes una clínica activa' }
 
   const { error } = await supabase
     .from('patients')
-    .update({
-      first_name: formData.get('first_name') as string,
-      last_name: formData.get('last_name') as string,
-      cedula: formData.get('cedula') as string,
-      birth_date: formData.get('birth_date') as string || null,
-      gender: formData.get('gender') as string || null,
-      phone: formData.get('phone') as string,
-      email: formData.get('email') as string,
-      address: formData.get('address') as string,
-      status: formData.get('status') as string || undefined,
-      observations: formData.get('observations') as string || undefined,
-    })
+    .update(validation.data)
     .eq('id', patientId)
     .eq('tenant_id', tenantId)
 
@@ -111,17 +104,19 @@ export async function getAppointments(slug: string, date?: string) {
 }
 
 export async function createAppointment(slug: string, formData: FormData) {
+  const rawInput = Object.fromEntries(formData.entries())
+  const validation = validateAppointmentInput(rawInput)
+  if (!validation.success) {
+    return { error: validation.error }
+  }
+
   const supabase = await createClient()
   const tenantId = await getTenantId(slug)
   if (!tenantId) return { error: 'No tienes una clínica activa' }
 
   const { error } = await supabase.from('appointments').insert({
     tenant_id: tenantId,
-    patient_id: formData.get('patient_id') as string,
-    date: formData.get('date') as string,
-    time: formData.get('time') as string,
-    reason: formData.get('reason') as string,
-    status: 'scheduled',
+    ...validation.data,
   })
 
   if (error) return { error: error.message }
