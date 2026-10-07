@@ -15,15 +15,23 @@ export default async function DashboardLayout({
     redirect('/login')
   }
 
-  // Get user's tenant membership
+  // Get user's tenant membership and redirect to tenant dashboard
   const { data: membership } = await supabase
     .from('tenant_members')
     .select('*, tenants(*)')
     .eq('user_id', user.id)
     .single()
 
-  if (!membership) {
+  if (!membership || !membership.tenants) {
     redirect('/onboarding')
+  }
+
+  const rawTenant = membership.tenants as unknown
+  const firstTenant = Array.isArray(rawTenant) ? rawTenant[0] : rawTenant
+  const slug = (firstTenant as { slug?: string })?.slug
+
+  if (slug) {
+    redirect(`/${slug}/dashboard`)
   }
 
   return (

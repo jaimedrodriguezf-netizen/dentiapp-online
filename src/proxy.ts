@@ -32,7 +32,7 @@ export async function proxy(request: NextRequest) {
   // Localized module list. Kept local because Next.js Edge runtime does not allow
   // importing components/modules from external routes files without bundle issues.
   const tenantModules = ['dashboard', 'admission', 'nursing', 'odontology', 'settings']
-  const isAuthRoute = path === '/login' || path === '/register'
+  const isAuthRoute = path === '/login' || path === '/register' || path === '/dashboard'
   const isProtectedTenantRoute =
     pathSegments.length >= 2 &&
     (tenantModules.includes(pathSegments[1]) || path.includes('/settings/'))
@@ -77,8 +77,8 @@ export async function proxy(request: NextRequest) {
   const { data: sessionData } = await supabase.auth.getSession()
   const user = sessionData?.session?.user
 
-  // 2. Redirecciones Inteligentes para Auth
-  if (user && (path === '/login' || path === '/register')) {
+  // 2. Redirecciones Inteligentes para Auth y /dashboard raíz
+  if (user && (path === '/login' || path === '/register' || path === '/dashboard')) {
     const { data: membershipRaw } = await supabase
       .from('tenant_members')
       .select('tenants(slug)')
