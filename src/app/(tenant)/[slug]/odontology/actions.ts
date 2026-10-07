@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { parseSessionFeedbacks, SessionFeedback } from './sessionFeedbacksHelpers'
+import { getCachedTenantId } from '@/lib/tenant/getTenantId'
 
 export interface PatientRow {
   id: string
@@ -112,13 +113,7 @@ export interface TreatmentSessionData {
 }
 
 export async function getTenantId(slug: string) {
-  const supabase = await createClient()
-  const { data: tenant } = await supabase
-    .from('tenants')
-    .select('id')
-    .eq('slug', slug)
-    .single()
-  return tenant?.id
+  return getCachedTenantId(slug)
 }
 
 export async function getPatient(slug: string, patientId: string): Promise<PatientRow | null> {

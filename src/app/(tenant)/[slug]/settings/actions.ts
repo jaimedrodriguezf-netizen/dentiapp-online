@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 
@@ -34,6 +35,21 @@ interface TeamMember {
 }
 
 async function getTenantInfo(slug: string): Promise<TenantInfo | null> {
+  try {
+    const headersList = await headers()
+    const headerSlug = headersList.get('x-tenant-slug')
+    const headerId = headersList.get('x-tenant-id')
+    const headerPlan = headersList.get('x-tenant-plan')
+    if (headerSlug === slug && headerId && headerPlan) {
+      return {
+        id: headerId,
+        plan: headerPlan as 'free' | 'standard' | 'business',
+      }
+    }
+  } catch {
+    // fallback if headers are unavailable
+  }
+
   const supabase = await createClient()
   const { data: tenant } = await supabase.from('tenants').select('id, plan').eq('slug', slug).single()
   if (!tenant) return null
