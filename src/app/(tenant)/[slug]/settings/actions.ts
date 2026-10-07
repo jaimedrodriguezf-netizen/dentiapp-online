@@ -316,6 +316,11 @@ export async function rescheduleAppointment(
   newDate: string,
   newTime: string
 ) {
+  const membership = await requireAuth(slug)
+  if (!membership) {
+    return { error: 'No autorizado' }
+  }
+
   const supabase = await createClient()
   const tenant = await getTenantInfo(slug)
   if (!tenant) return { error: 'No tienes una clínica activa' }
