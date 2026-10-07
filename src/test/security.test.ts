@@ -91,6 +91,32 @@ describe('Security Pen-Testing — Support Server Actions', () => {
         createSupportFeedback('demo', 'bug', 'Alerta', context, null)
       ).rejects.toThrow('Usuario no autenticado')
     })
+    it('should reject oversized screenshot payload to prevent memory DoS', async () => {
+      mockGetUser.mockResolvedValueOnce({
+        data: { user: { id: 'user_doctor', email: 'doctor@dentiapp.online' } }
+      })
+
+      mockSingle.mockResolvedValueOnce({
+        data: { tenant_id: 'tenant_xyz', role: 'doctor' },
+        error: null
+      })
+
+      const context = {
+        pathname: '/odontology',
+        userAgent: 'Mozilla/5.5',
+        userRole: 'doctor',
+        viewportWidth: 1024,
+        viewportHeight: 768,
+        timestamp: new Date().toISOString()
+      }
+
+      // Payload que supera los 7MB
+      const hugePayload = 'data:image/png;base64,' + 'A'.repeat(8 * 1024 * 1024)
+
+      await expect(
+        createSupportFeedback('demo', 'bug', 'Feedback con imagen gigante', context, hugePayload)
+      ).rejects.toThrow('La captura de pantalla supera el límite máximo de 5MB')
+    })
   })
 
   describe('Multi-tenant Isolation Check', () => {

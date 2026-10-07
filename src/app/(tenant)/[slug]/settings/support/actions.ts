@@ -18,7 +18,7 @@ async function getTenantMembership(supabase: SupabaseClient) {
     .single()
 
   if (!membership) throw new Error('No tenés membresía para este tenant')
-  return { tenantId: membership.tenant_id, role: membership.role }
+  return { tenantId: membership.tenant_id, role: membership.role, user }
 }
 
 // Registrar auditoría en la base de datos
@@ -58,20 +58,37 @@ export async function createSupportFeedback(
   screenshotBase64: string | null
 ) {
   const supabase = await createClient()
-  const { tenantId } = await getTenantMembership(supabase)
+  const { tenantId, user } = await getTenantMembership(supabase)
 
-  const { data: userData } = await supabase.auth.getUser()
-  const user = userData?.user
   const userEmail = user?.email || 'anonimo@dentiapp.online'
   const userId = user?.id || null
+
+  const trimmedMessage = (message || '').trim()
+  if (!trimmedMessage) {
+    throw new Error('El mensaje no puede estar vacío')
+  }
+  if (trimmedMessage.length > 5000) {
+    throw new Error('El mensaje no puede superar los 5000 caracteres')
+  }
 
   let screenshotPath: string | null = null
 
   // Si se adjunta una captura en Base64, la decodificamos y subimos al bucket
   if (screenshotBase64) {
+    // 7MB en base64 equivale aproximadamente a 5MB en binario
+    const MAX_BASE64_LENGTH = 7 * 1024 * 1024
+    if (screenshotBase64.length > MAX_BASE64_LENGTH) {
+      throw new Error('La captura de pantalla supera el límite máximo de 5MB')
+    }
+
     try {
       const base64Data = screenshotBase64.split(',')[1] || screenshotBase64
       const buffer = Buffer.from(base64Data, 'base64')
+
+      const MAX_BUFFER_BYTES = 5 * 1024 * 1024
+      if (buffer.length > MAX_BUFFER_BYTES) {
+        throw new Error('La captura de pantalla supera el límite máximo de 5MB')
+      }
       
       const fileName = `${tenantId}/${Date.now()}_screenshot.png`
       const { error: uploadError } = await supabase.storage
