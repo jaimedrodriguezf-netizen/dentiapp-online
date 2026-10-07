@@ -13,4 +13,4 @@
 - [x] Task 3: Crear migración `013_performance_indexes.sql` con índices críticos para Postgres y RLS. (commit: ec46097)
 - [x] Task 4: Implementar `src/app/(tenant)/[slug]/error.tsx` como Error Boundary resiliente. (commit: 7673cbf)
 - [x] Task 5: Crear utilidad de fecha segura (`getLocalDateString`) y resolver desfasajes horarios. (commit: d327e81)
-- [ ] Task 6: Optimizar `next.config.ts` con compresión y formatos modernos de imágenes.
+- [x] Task 6: Optimizar `next.config.ts` con compresión y formatos modernos de imágenes. (commit: 1a537af)
