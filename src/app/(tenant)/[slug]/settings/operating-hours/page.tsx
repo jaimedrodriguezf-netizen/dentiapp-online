@@ -4,7 +4,7 @@ import { ArrowLeft, Clock, Save } from 'lucide-react'
 
 const DAY_LABELS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 
-export function getDayLabel(dayOfWeek: number): string {
+function getDayLabel(dayOfWeek: number): string {
   return DAY_LABELS[dayOfWeek] || 'Desconocido'
 }
 
