@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { actionSuccess, actionError } from '@/lib/actions/result'
+import type { ActionResult } from '@/types/action'
 
 interface TenantInfo {
   id: string
@@ -315,15 +317,15 @@ export async function rescheduleAppointment(
   appointmentId: string,
   newDate: string,
   newTime: string
-) {
+): Promise<ActionResult> {
   const membership = await requireAuth(slug)
   if (!membership) {
-    return { error: 'No autorizado' }
+    return actionError('No autorizado', 'UNAUTHORIZED')
   }
 
   const supabase = await createClient()
   const tenant = await getTenantInfo(slug)
-  if (!tenant) return { error: 'No tienes una clínica activa' }
+  if (!tenant) return actionError('No tienes una clínica activa', 'TENANT_NOT_FOUND')
 
   const { error } = await supabase
     .from('appointments')
@@ -331,10 +333,10 @@ export async function rescheduleAppointment(
     .eq('id', appointmentId)
     .eq('tenant_id', tenant.id)
 
-  if (error) return { error: error.message }
+  if (error) return actionError(error.message, 'DB_ERROR')
 
   revalidatePath(`/${slug}/admission/appointments`)
-  return { success: true }
+  return actionSuccess(undefined, 'Turno reprogramado exitosamente')
 }
 
 // ============================================================

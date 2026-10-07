@@ -7,7 +7,7 @@
 - Implementar un interceptor/logger de auditoría médica (`audit_logs`) para rastrear cambios en historias clínicas y citas.
 
 ## Tasks
-- [ ] Task 1: Purgar rutas huérfanas en `src/app/(dashboard)` y centralizar tipos de dominio en `src/types/`.
+- [x] Task 1: Purgar rutas huérfanas en `src/app/(dashboard)` y centralizar tipos de dominio en `src/types/`. (commit: f6f4aa2)
 - [ ] Task 2: Implementar contrato estándar `ActionResult<T>` y estandarizar respuestas en Server Actions.
 - [ ] Task 3: Crear capa de validación Zero-Trust de entradas defensivas antes de persistir en base de datos.
 - [ ] Task 4: Implementar logger centralizado de auditoría médica (`audit_logs`) para historias clínicas y turnos.

@@ -44,7 +44,7 @@ export default function RescheduleModal({ slug, appointmentId, currentDate, curr
 
     const result = await rescheduleAppointment(slug, appointmentId, selectedDate, selectedTime)
     
-    if (result?.error) {
+    if (result && !result.success) {
       setError(result.error)
       setLoading(false)
       return

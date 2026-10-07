@@ -3,6 +3,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { getCachedTenantId } from '@/lib/tenant/getTenantId'
+import { actionSuccess, actionError } from '@/lib/actions/result'
+import type { ActionResult } from '@/types/action'
 
 async function getTenantId(slug: string) {
   return getCachedTenantId(slug)
@@ -127,10 +129,10 @@ export async function createAppointment(slug: string, formData: FormData) {
   redirect(`/${slug}/admission/appointments`)
 }
 
-export async function updateAppointmentStatus(slug: string, appointmentId: string, status: string) {
+export async function updateAppointmentStatus(slug: string, appointmentId: string, status: string): Promise<ActionResult> {
   const supabase = await createClient()
   const tenantId = await getTenantId(slug)
-  if (!tenantId) return { error: 'No tienes una clínica activa' }
+  if (!tenantId) return actionError('No tienes una clínica activa', 'TENANT_NOT_FOUND')
 
   const { error } = await supabase
     .from('appointments')
@@ -138,7 +140,7 @@ export async function updateAppointmentStatus(slug: string, appointmentId: strin
     .eq('id', appointmentId)
     .eq('tenant_id', tenantId)
 
-  if (error) return { error: error.message }
+  if (error) return actionError(error.message, 'DB_ERROR')
 
-  return { success: true }
+  return actionSuccess(undefined, 'Estado de turno actualizado')
 }
