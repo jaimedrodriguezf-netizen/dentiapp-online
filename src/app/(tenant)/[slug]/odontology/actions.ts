@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { parseSessionFeedbacks, SessionFeedback } from './sessionFeedbacksHelpers'
 import { getCachedTenantId } from '@/lib/tenant/getTenantId'
+import { logAuditEvent } from '@/lib/audit/logger'
 
 export interface PatientRow {
   id: string
@@ -310,6 +311,14 @@ export async function createDentalRecord(slug: string, patientId: string, formDa
     }
   }
 
+  await logAuditEvent({
+    tenantId,
+    action: 'create',
+    resourceType: 'dental_record',
+    resourceId: record.id,
+    details: { patient_id: patientId, form: '033' },
+  })
+
   redirect(`/${slug}/odontology/form-033/${record.id}`)
 }
 
@@ -410,6 +419,14 @@ export async function updateDentalRecord(slug: string, recordId: string, formDat
       console.error('Failed to parse and save odontogram teeth in update', err)
     }
   }
+
+  await logAuditEvent({
+    tenantId,
+    action: 'update',
+    resourceType: 'dental_record',
+    resourceId: recordId,
+    details: { form: '033' },
+  })
 
   redirect(`/${slug}/odontology/form-033/${recordId}`)
 }
