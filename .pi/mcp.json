@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "url": "https://mcp.supabase.com/mcp",
+      "description": "Supabase MCP server for database queries, schema inspections, documentation search, and management"
+    }
+  }
+}
