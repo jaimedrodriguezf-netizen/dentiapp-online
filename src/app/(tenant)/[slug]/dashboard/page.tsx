@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { headers } from 'next/headers'
 import { getCachedTenantId } from '@/lib/tenant/getTenantId'
+import { getLocalDateString } from '@/lib/utils/date'
 import { 
   Users, 
   CalendarDays, 
@@ -52,7 +53,7 @@ export default async function DashboardPage({ params }: Props) {
   if (!tenantId) return null
 
   const supabase = await createClient()
-  const today = new Date().toISOString().split('T')[0]
+  const today = getLocalDateString()
 
   // Cargar métricas y turnos del día en paralelo
   const [patientsCount, allAppointmentsCount, recordsCount, todayAppointmentsRaw] = await Promise.all([

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react'
 import Link from 'next/link'
+import { getLocalDateString } from '@/lib/utils/date'
 
 interface Appointment {
   id: string
@@ -34,7 +35,7 @@ function getWeekStart(dateStr: string): Date {
 }
 
 function formatDate(date: Date): string {
-  return date.toISOString().split('T')[0]
+  return getLocalDateString(date)
 }
 
 const statusColors: Record<string, string> = {
@@ -67,7 +68,7 @@ export default function WeeklyCalendar({ slug, appointments, currentDate }: Prop
     setWeekStart(d)
   }
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = getLocalDateString()
 
   return (
     <div className="space-y-4">

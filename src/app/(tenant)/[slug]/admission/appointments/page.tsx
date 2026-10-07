@@ -1,6 +1,7 @@
 import { getAppointments } from '../actions'
 import { CalendarDays, Plus, Clock, ChevronLeft, ChevronRight, Phone, ArrowRight, User } from 'lucide-react'
 import Link from 'next/link'
+import { getLocalDateString } from '@/lib/utils/date'
 import AppointmentActions from './AppointmentActions'
 import WeeklyCalendar from './WeeklyCalendar'
 
@@ -37,7 +38,7 @@ export default async function AppointmentsPage({ params, searchParams }: Props) 
   const isWeekly = viewParam === 'week'
   
   const todayDate = new Date()
-  const todayStr = todayDate.toISOString().split('T')[0]
+  const todayStr = getLocalDateString(todayDate)
   const appointmentsRaw = await getAppointments(slug, todayStr)
   const appointments = (appointmentsRaw as unknown as AppointmentWithPatient[]) || []
 

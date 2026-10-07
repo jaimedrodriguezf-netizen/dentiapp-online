@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { rescheduleAppointment, getOperatingHours } from '../../settings/actions'
 import type { OperatingHour } from '../../settings/actions'
 import { Loader2, X, ChevronRight } from 'lucide-react'
+import { getLocalDateString } from '@/lib/utils/date'
 
 interface Props {
   slug: string
@@ -53,7 +54,7 @@ export default function RescheduleModal({ slug, appointmentId, currentDate, curr
   }
 
   const isPast = (time: string) => {
-    const today = new Date().toISOString().split('T')[0]
+    const today = getLocalDateString()
     if (selectedDate > today) return false
     const now = new Date()
     const [h, m] = time.split(':').map(Number)
@@ -87,7 +88,7 @@ export default function RescheduleModal({ slug, appointmentId, currentDate, curr
             <input
               type="date"
               value={selectedDate}
-              min={new Date().toISOString().split('T')[0]}
+              min={getLocalDateString()}
               onChange={(e) => {
                 setSelectedDate(e.target.value)
                 setSelectedTime(null)
