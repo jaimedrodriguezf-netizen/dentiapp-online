@@ -4,6 +4,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { register } from '../actions'
 import { Tooth } from '@/components/ui/ToothIcon'
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton'
+import { APP_VERSION } from '@/lib/version'
 import { Eye, EyeOff, Loader2, User, Mail, Lock, ShieldCheck, Sparkles, ArrowRight, X } from 'lucide-react'
 
 export default function RegisterPage() {
@@ -166,13 +168,18 @@ export default function RegisterPage() {
               </button>
             </form>
 
-            <div className="flex items-center gap-4 my-10">
+            <div className="flex items-center gap-4 my-8">
               <div className="flex-1 h-px bg-gray-100"></div>
-              <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest px-2">o bien</span>
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">o registrate con</span>
               <div className="flex-1 h-px bg-gray-100"></div>
             </div>
 
-            <p className="text-center text-gray-500 font-medium text-sm">
+            <GoogleSignInButton
+              text="Registrarse con Google"
+              onError={(err) => setError(err)}
+            />
+
+            <p className="text-center text-gray-500 font-medium text-sm mt-8">
               ¿Ya tenés cuenta?{' '}
               <Link href="/login" className="text-blue-600 font-black uppercase tracking-tight hover:text-blue-800 transition-colors ml-1">
                 Iniciar Sesión
@@ -181,7 +188,7 @@ export default function RegisterPage() {
           </div>
           
           <p className="text-center mt-8 text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">
-            DentiApp Online v1.0
+            DentiApp Online v{APP_VERSION}
           </p>
         </div>
       </div>

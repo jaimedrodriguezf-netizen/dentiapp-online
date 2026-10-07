@@ -5,17 +5,17 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { login } from '../actions'
 import { Tooth } from '@/components/ui/ToothIcon'
+import GoogleSignInButton from '@/components/auth/GoogleSignInButton'
 import { Eye, EyeOff, Loader2, Mail, Lock, ShieldCheck, Sparkles, ArrowRight, X } from 'lucide-react'
 import { APP_VERSION } from '@/lib/version'
 
 export default function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [showPassword, setShowPassword] = useState(false)
-
   const redirectUrl = searchParams.get('redirect')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(searchParams.get('error'))
+  const [showPassword, setShowPassword] = useState(false)
 
   async function handleSubmit(formData: FormData) {
     setLoading(true)
@@ -159,13 +159,19 @@ export default function LoginForm() {
               </button>
             </form>
 
-            <div className="flex items-center gap-4 my-10">
+            <div className="flex items-center gap-4 my-8">
               <div className="flex-1 h-px bg-gray-100"></div>
-              <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest px-2">o bien</span>
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">o continuá con</span>
               <div className="flex-1 h-px bg-gray-100"></div>
             </div>
 
-            <p className="text-center text-gray-500 font-medium text-sm">
+            <GoogleSignInButton
+              text="Continuar con Google"
+              redirectTo={redirectUrl}
+              onError={(err) => setError(err)}
+            />
+
+            <p className="text-center text-gray-500 font-medium text-sm mt-8">
               ¿No tenés cuenta?{' '}
               <Link href="/register" className="text-blue-600 font-black uppercase tracking-tight hover:text-blue-800 transition-colors ml-1">
                 Registrate Gratis
