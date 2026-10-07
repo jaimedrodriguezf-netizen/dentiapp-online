@@ -2,7 +2,9 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import OdontogramSVG, { toothColors, toothLabels, isDeciduous } from '@/components/odontology/OdontogramSVG'
-import { Info, MoveHorizontal } from 'lucide-react'
+import { Info, MoveHorizontal, Eye, Eraser, X, Activity } from 'lucide-react'
+
+type ActiveTool = 'inspect' | 'caries' | 'filling' | 'extraction' | 'healthy'
 
 interface ToothData {
   tooth_number: number
@@ -37,6 +39,7 @@ export default function OdontogramEditor({ initialTeeth, onTeethChange, readOnly
   const [teeth, setTeeth] = useState<ToothData[]>(initialTeeth)
   const [selectedTooth, setSelectedTooth] = useState<number | null>(null)
   const [selectedSurface, setSelectedSurface] = useState<string | null>(null)
+  const [activeTool, setActiveTool] = useState<ActiveTool>('inspect')
 
   const getTooth = useCallback(
     (toothNumber: number) => teeth.find((t) => t.tooth_number === toothNumber),
@@ -56,6 +59,17 @@ export default function OdontogramEditor({ initialTeeth, onTeethChange, readOnly
 
   function handleToothClick(toothNumber: number) {
     if (readOnly) return
+
+    if (activeTool === 'extraction') {
+      handleStatusChange(toothNumber, 'extraction_indicated')
+      return
+    }
+    if (activeTool === 'healthy') {
+      setTeeth((prev) => prev.filter((t) => t.tooth_number !== toothNumber))
+      return
+    }
+
+    // Default inspect tool: open detailed modal
     setSelectedTooth(toothNumber === selectedTooth ? null : toothNumber)
     setSelectedSurface(null)
   }
@@ -81,11 +95,12 @@ export default function OdontogramEditor({ initialTeeth, onTeethChange, readOnly
   function handleSurfaceChange(toothNumber: number, surface: string, status: string) {
     setTeeth((prev) => {
       const existing = prev.findIndex((t) => t.tooth_number === toothNumber)
-      const surfaces = existing >= 0
-        ? { ...getToothSurfaces(toothNumber), [surface]: status }
-        : { V: 'healthy', D: 'healthy', M: 'healthy', L: 'healthy', O: 'healthy', [surface]: status }
+      const currentSurfaces = getToothSurfaces(toothNumber)
+      const surfaces = { ...currentSurfaces, [surface]: status }
 
-      const nonHealthy = Object.values(surfaces).filter(s => s !== 'healthy')
+      // Solo evaluamos las 5 superficies anatómicas para determinar el estado general
+      const anatomicalStatuses = ['V', 'D', 'M', 'L', 'O'].map((s) => surfaces[s] || 'healthy')
+      const nonHealthy = anatomicalStatuses.filter((s) => s !== 'healthy')
       const overall = nonHealthy.length === 0 ? 'healthy' : nonHealthy.length === 1 ? nonHealthy[0] : 'multiple'
 
       if (existing >= 0) {
@@ -94,6 +109,36 @@ export default function OdontogramEditor({ initialTeeth, onTeethChange, readOnly
         return updated
       }
       return [...prev, { tooth_number: toothNumber, status: overall, surfaces }]
+    })
+  }
+
+  function handleRecessionChange(toothNumber: number, recession: string) {
+    setTeeth((prev) => {
+      const existing = prev.findIndex((t) => t.tooth_number === toothNumber)
+      const currentSurfaces = getToothSurfaces(toothNumber)
+      const surfaces = { ...currentSurfaces, recession }
+
+      if (existing >= 0) {
+        const updated = [...prev]
+        updated[existing] = { ...updated[existing], surfaces }
+        return updated
+      }
+      return [...prev, { tooth_number: toothNumber, status: 'healthy', surfaces }]
+    })
+  }
+
+  function handleMobilityChange(toothNumber: number, mobility: string) {
+    setTeeth((prev) => {
+      const existing = prev.findIndex((t) => t.tooth_number === toothNumber)
+      const currentSurfaces = getToothSurfaces(toothNumber)
+      const surfaces = { ...currentSurfaces, mobility }
+
+      if (existing >= 0) {
+        const updated = [...prev]
+        updated[existing] = { ...updated[existing], surfaces }
+        return updated
+      }
+      return [...prev, { tooth_number: toothNumber, status: 'healthy', surfaces }]
     })
   }
 
@@ -109,6 +154,30 @@ export default function OdontogramEditor({ initialTeeth, onTeethChange, readOnly
     handleSurfaceChange(toothNumber, surface, nextStatus)
   }
 
+  function handleSurfaceClick(toothNumber: number, surface: string) {
+    if (readOnly) return
+
+    if (activeTool === 'caries') {
+      handleSurfaceChange(toothNumber, surface, 'caries')
+      return
+    }
+    if (activeTool === 'filling') {
+      handleSurfaceChange(toothNumber, surface, 'filling')
+      return
+    }
+    if (activeTool === 'healthy') {
+      handleSurfaceChange(toothNumber, surface, 'healthy')
+      return
+    }
+    if (activeTool === 'extraction') {
+      handleStatusChange(toothNumber, 'extraction_indicated')
+      return
+    }
+
+    // Default inspect tool: cycle surface status
+    handleSurfaceCycle(toothNumber, surface)
+  }
+
   // Notify parent of teeth changes
   useEffect(() => {
     onTeethChange?.(teeth)
@@ -118,6 +187,92 @@ export default function OdontogramEditor({ initialTeeth, onTeethChange, readOnly
 
   return (
     <div className="space-y-4 md:space-y-6">
+      {/* Barra de Herramientas / Modo Pincel Clínico */}
+      {!readOnly && (
+        <div className="bg-white border border-gray-200 rounded-2xl p-3 shadow-xs mx-4 md:mx-0 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2 hidden sm:inline">
+              Modo:
+            </span>
+
+            <button
+              type="button"
+              onClick={() => setActiveTool('inspect')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTool === 'inspect'
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                  : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              <Eye className="w-3.5 h-3.5" />
+              Inspeccionar / Modal
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTool('caries')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTool === 'caries'
+                  ? 'bg-rose-600 text-white border-rose-600 shadow-xs'
+                  : 'bg-white text-rose-700 border-gray-200 hover:bg-rose-50/50'
+              }`}
+            >
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 border border-white shrink-0" />
+              Pincel Caries
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTool('filling')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTool === 'filling'
+                  ? 'bg-sky-600 text-white border-sky-600 shadow-xs'
+                  : 'bg-white text-sky-700 border-gray-200 hover:bg-sky-50/50'
+              }`}
+            >
+              <span className="w-2.5 h-2.5 rounded-full bg-sky-500 border border-white shrink-0" />
+              Pincel Obturado
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTool('extraction')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTool === 'extraction'
+                  ? 'bg-orange-600 text-white border-orange-600 shadow-xs'
+                  : 'bg-white text-orange-700 border-gray-200 hover:bg-orange-50/50'
+              }`}
+            >
+              <X className="w-3.5 h-3.5" />
+              Extracción
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTool('healthy')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTool === 'healthy'
+                  ? 'bg-gray-800 text-white border-gray-800 shadow-xs'
+                  : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+              }`}
+            >
+              <Eraser className="w-3.5 h-3.5" />
+              Borrador Sano
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={markAllHealthy}
+              className="text-xs font-semibold text-gray-600 hover:text-rose-600 transition-colors px-2.5 py-1.5 rounded-lg border border-gray-200 hover:border-rose-200 hover:bg-rose-50/30 cursor-pointer"
+            >
+              Marcar Boca Sana
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Área del Odontograma con Scroll Horizontal en Móvil */}
       <div className="card bg-base-100 border border-base-200 shadow-sm overflow-hidden mx-4 md:mx-0">
         <div className="card-body p-0">
@@ -128,13 +283,9 @@ export default function OdontogramEditor({ initialTeeth, onTeethChange, readOnly
                 Deslizá
               </span>
             </div>
-            <button
-              type="button"
-              onClick={markAllHealthy}
-              className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:text-blue-700 transition-colors bg-white px-3 py-1.5 rounded-lg border border-blue-100 shadow-sm"
-            >
-              Marcar Boca Sana
-            </button>
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider hidden sm:inline">
+              Formato Normativo Oficial MSP Ecuador (2021)
+            </span>
           </div>
 
           <div className="overflow-x-auto scrollbar-hide py-4 px-4 md:p-8">
@@ -142,7 +293,7 @@ export default function OdontogramEditor({ initialTeeth, onTeethChange, readOnly
               <OdontogramSVG
                 teeth={teeth}
                 onToothClick={handleToothClick}
-                onSurfaceClick={handleSurfaceCycle}
+                onSurfaceClick={handleSurfaceClick}
                 selectedTooth={selectedTooth}
                 variant="msp"
               />
@@ -504,40 +655,66 @@ export default function OdontogramEditor({ initialTeeth, onTeethChange, readOnly
                     </div>
                   </div>
 
-                  {/* Movilidad y Recesión Inputs */}
+                  {/* Parámetros Periodontales (Norma Técnica MSP: Recesión y Movilidad) */}
                   {!isDec && (
-                    <div className="border-t border-gray-100 pt-4 grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block ml-1">
-                          Movilidad (1, 2, 3, 4)
-                        </label>
-                        <select
-                          value={selectedSurfaces?.mobility || ''}
-                          onChange={(e) => handleSurfaceChange(selectedTooth, 'mobility', e.target.value)}
-                          className="w-full rounded-xl border-2 border-gray-100 bg-gray-50/30 px-3 py-2 text-sm font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none transition-all"
-                        >
-                          <option value="">Ninguna</option>
-                          <option value="1">1</option>
-                          <option value="2">2</option>
-                          <option value="3">3</option>
-                          <option value="4">4</option>
-                        </select>
+                    <div className="border-t border-gray-150 pt-4 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Activity className="w-4 h-4 text-blue-600" />
+                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                          Parámetros Periodontales (Norma Técnica MSP)
+                        </span>
                       </div>
-                      <div>
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block ml-1">
-                          Recesión (1, 2, 3, 4)
-                        </label>
-                        <select
-                          value={selectedSurfaces?.recession || ''}
-                          onChange={(e) => handleSurfaceChange(selectedTooth, 'recession', e.target.value)}
-                          className="w-full rounded-xl border-2 border-gray-100 bg-gray-50/30 px-3 py-2 text-sm font-bold text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none transition-all"
-                        >
-                          <option value="">Ninguna</option>
-                          <option value="1">1</option>
-                          <option value="2">2</option>
-                          <option value="3">3</option>
-                          <option value="4">4</option>
-                        </select>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50/70 p-4 rounded-2xl border border-gray-200">
+                        <div>
+                          <label className="text-[11px] font-bold text-gray-700 block mb-1.5">
+                            Recesión Gingival (mm)
+                          </label>
+                          <div className="flex items-center gap-1">
+                            {['', '1', '2', '3', '4'].map((val) => {
+                              const isSelected = (selectedSurfaces?.recession || '') === val
+                              return (
+                                <button
+                                  key={val}
+                                  type="button"
+                                  onClick={() => handleRecessionChange(selectedTooth, val)}
+                                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                                    isSelected
+                                      ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100'
+                                  }`}
+                                >
+                                  {val === '' ? '0' : `${val}mm`}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-bold text-gray-700 block mb-1.5">
+                            Movilidad Dental (Grado)
+                          </label>
+                          <div className="flex items-center gap-1">
+                            {['', '1', '2', '3'].map((deg) => {
+                              const isSelected = (selectedSurfaces?.mobility || '') === deg
+                              return (
+                                <button
+                                  key={deg}
+                                  type="button"
+                                  onClick={() => handleMobilityChange(selectedTooth, deg)}
+                                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                                    isSelected
+                                      ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100'
+                                  }`}
+                                >
+                                  {deg === '' ? 'Normal' : `G-${deg}`}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
