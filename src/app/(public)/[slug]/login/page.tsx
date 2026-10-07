@@ -33,6 +33,7 @@ export default function TenantLoginPage() {
       return
     }
 
+    router.refresh()
     router.push(`/${slug}/dashboard`)
   }
 

@@ -13,6 +13,7 @@ import {
   LucideIcon
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { useTenantContext } from '@/contexts/tenant-context'
 
 interface SearchResult {
   id: string
@@ -38,6 +39,7 @@ export default function GlobalSearch() {
   const router = useRouter()
   const params = useParams()
   const slug = (params.slug as string) || ''
+  const tenant = useTenantContext()
   const supabase = createClient()
 
   // Atajo de teclado Command+K o Ctrl+K
@@ -67,12 +69,17 @@ export default function GlobalSearch() {
       { id: 'settings', title: 'Configuración', type: 'navigation' as const, href: `/${slug}/settings/profile`, icon: Settings },
     ].filter(a => a.title.toLowerCase().includes(text.toLowerCase()))
 
-    // Búsqueda en base de datos
-    const { data: patientsRaw } = await supabase
+    // Búsqueda en base de datos filtrada por tenant activo
+    let patientsQuery = supabase
       .from('patients')
       .select('id, first_name, last_name, phone')
       .or(`first_name.ilike.%${text}%,last_name.ilike.%${text}%`)
-      .limit(5)
+
+    if (tenant?.id) {
+      patientsQuery = patientsQuery.eq('tenant_id', tenant.id)
+    }
+
+    const { data: patientsRaw } = await patientsQuery.limit(5)
     
     const patients = (patientsRaw as unknown as PatientSearchResponse[]) || []
 
@@ -87,7 +94,7 @@ export default function GlobalSearch() {
 
     setResults([...staticActions, ...patientResults])
     setLoading(false)
-  }, [slug, supabase])
+  }, [slug, supabase, tenant])
 
   useEffect(() => {
     const timer = setTimeout(() => {
