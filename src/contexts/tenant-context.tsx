@@ -6,7 +6,7 @@ export interface TenantContextValue {
   id: string
   name: string
   slug: string
-  plan: 'standard' | 'business'
+  plan: 'free' | 'standard' | 'business'
   logo_url: string | null
   phone: string | null
   address: string | null

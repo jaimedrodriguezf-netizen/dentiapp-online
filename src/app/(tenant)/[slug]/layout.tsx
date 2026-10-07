@@ -12,7 +12,7 @@ interface TenantLayoutData {
   id: string
   name: string
   slug: string
-  plan: 'standard' | 'business'
+  plan: 'free' | 'standard' | 'business'
   logo_url: string | null
   phone: string | null
   address: string | null
@@ -36,7 +36,7 @@ export default async function TenantLayout({ children, params }: Props) {
   const tenantSlug = headersList.get('x-tenant-slug')
   const tenantName = headersList.get('x-tenant-name')
   const tenantRole = headersList.get('x-tenant-role') as MembershipLayoutData['role'] | null
-  const tenantPlan = headersList.get('x-tenant-plan') as 'standard' | 'business' | null
+  const tenantPlan = headersList.get('x-tenant-plan') as 'free' | 'standard' | 'business' | null
   const tenantLogoUrl = headersList.get('x-tenant-logo-url') || null
   const tenantPhone = headersList.get('x-tenant-phone') || null
   const tenantAddress = headersList.get('x-tenant-address') || null
