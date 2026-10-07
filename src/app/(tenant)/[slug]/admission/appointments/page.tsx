@@ -1,5 +1,5 @@
 import { getAppointments } from '../actions'
-import { CalendarDays, Plus, Clock, ChevronLeft, ChevronRight, Phone, ArrowRight, User, Calendar } from 'lucide-react'
+import { CalendarDays, Plus, Clock, ChevronLeft, ChevronRight, Phone, ArrowRight, User } from 'lucide-react'
 import Link from 'next/link'
 import AppointmentActions from './AppointmentActions'
 import WeeklyCalendar from './WeeklyCalendar'

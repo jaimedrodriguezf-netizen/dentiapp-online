@@ -1,7 +1,7 @@
 import { getTeamMembers, removeMember, updateMemberRole } from '../actions'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { ArrowLeft, Trash2, User, ShieldCheck, Mail, Info } from 'lucide-react'
+import { ArrowLeft, Trash2, ShieldCheck, Mail, Info } from 'lucide-react'
 
 interface Props {
   params: Promise<{ slug: string }>

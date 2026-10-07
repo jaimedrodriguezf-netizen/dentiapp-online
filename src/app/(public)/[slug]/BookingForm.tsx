@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { bookAppointment, getBusySlots } from './actions'
-import { CalendarDays, CheckCircle, Loader2, Clock, X, User, Phone, Mail, ClipboardList, Sparkles } from 'lucide-react'
+import { CalendarDays, CheckCircle, Loader2, Clock, X, User, Phone, Mail, ClipboardList, Sparkles, LucideIcon } from 'lucide-react'
 
 interface BookingFormProps {
   slug: string
@@ -306,7 +306,7 @@ export default function BookingForm({ slug }: BookingFormProps) {
   )
 }
 
-function FormGroup({ label, icon: Icon, children }: { label: string, icon: any, children: React.ReactNode }) {
+function FormGroup({ label, icon: Icon, children }: { label: string, icon: LucideIcon, children: React.ReactNode }) {
   return (
     <div className="space-y-2">
       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 flex items-center gap-1.5">

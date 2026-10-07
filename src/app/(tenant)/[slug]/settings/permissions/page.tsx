@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Fragment, useState, useEffect, use } from 'react'
-import { ArrowLeft, Check, X, Loader2, Shield, Info, MoveHorizontal } from 'lucide-react'
+import { ArrowLeft, Check, X, Loader2, Shield, MoveHorizontal } from 'lucide-react'
 import { getRolePermissions, togglePermission } from '../actions'
 
 interface Props {

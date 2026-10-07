@@ -1,14 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { register } from '../actions'
 import { Tooth } from '@/components/ui/ToothIcon'
 import { Eye, EyeOff, Loader2, User, Mail, Lock, ShieldCheck, Sparkles, ArrowRight, X } from 'lucide-react'
 
 export default function RegisterPage() {
-  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)

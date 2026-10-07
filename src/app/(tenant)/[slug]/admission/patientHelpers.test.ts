@@ -18,7 +18,7 @@ describe('Patient Status — StatusBadge Config', () => {
   })
 
   it('each status has label, color, and bg', () => {
-    Object.entries(statusConfig).forEach(([key, config]) => {
+    Object.entries(statusConfig).forEach(([, config]) => {
       expect(config.label).toBeTruthy()
       expect(config.color).toBeTruthy()
       expect(config.bg).toBeTruthy()

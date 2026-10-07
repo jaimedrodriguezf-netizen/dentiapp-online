@@ -1,7 +1,6 @@
 'use client'
 
 import { User } from '@supabase/supabase-js'
-import { useParams } from 'next/navigation'
 
 interface Tenant {
   name: string
@@ -14,8 +13,6 @@ interface DashboardHeaderProps {
 }
 
 export default function DashboardHeader({ user, tenant, children }: DashboardHeaderProps) {
-  const params = useParams()
-  const slug = (params.slug as string) || ''
   const userName = (user.user_metadata?.name as string) || user.email || 'Usuario'
 
   return (

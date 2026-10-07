@@ -4,7 +4,6 @@ import { useState, useMemo, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Save, X, ClipboardList, Stethoscope } from 'lucide-react'
-import CIESearch from '@/components/odontology/CIESearch'
 import PrescriptionManager from '@/components/odontology/PrescriptionManager'
 import VitalSignsSection from '@/components/odontology/VitalSignsSection'
 import MedicalHistoryCheckboxes from '@/components/odontology/MedicalHistoryCheckboxes'
@@ -13,15 +12,7 @@ import OdontogramEditor from '@/components/odontology/OdontogramEditor'
 import { OralHygieneFields, FluorosisField, MalocclusionFields, StomatognathicFields, IndiceField } from '@/components/odontology/OralExamSection'
 import { isDeciduous } from '@/components/odontology/OdontogramSVG'
 import { updateDentalRecord } from '@/app/(tenant)/[slug]/odontology/actions'
-import InteractiveToothSelector from '@/components/odontology/InteractiveToothSelector'
 import DiagnosesListManager from '@/components/odontology/DiagnosesListManager'
-
-const FDI_TEETH = [
-  18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28,
-  55, 54, 53, 52, 51, 61, 62, 63, 64, 65,
-  85, 84, 83, 82, 81, 71, 72, 73, 74, 75,
-  48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38
-]
 
 interface DiagnosisData {
   code?: string

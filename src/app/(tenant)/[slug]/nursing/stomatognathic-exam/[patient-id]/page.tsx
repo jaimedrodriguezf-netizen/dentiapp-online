@@ -1,6 +1,6 @@
-import { getPatient, saveStomatognathicExam, getStomatognathicExam } from '../../actions'
+import { getPatient, saveStomatognathicExam, getStomatognathicExam, type StomatognathicExamData } from '../../actions'
 import Link from 'next/link'
-import { ArrowLeft, Save, X, Activity, User, Info } from 'lucide-react'
+import { ArrowLeft, Save, X, Activity, Info } from 'lucide-react'
 import { StomatognathicFields } from '@/components/odontology/OralExamSection'
 
 interface Props {
@@ -85,7 +85,19 @@ export default async function StomatognathicExamPage({ params }: Props) {
            const key = regionMap[r.id]
            if (key && r.finding) data[key] = r.finding
          }
-         await saveStomatognathicExam(slug, patientId, data as any)
+         const examData: StomatognathicExamData = {
+           lips: data.lips || null,
+           cheeks: data.cheeks || null,
+           maxilla: data.maxilla || null,
+           mandible: data.mandible || null,
+           tongue: data.tongue || null,
+           palate: data.palate || null,
+           floor_of_mouth: data.floor_of_mouth || null,
+           salivary_glands: data.salivary_glands || null,
+           tmj: data.tmj || null,
+           lymph_nodes: data.lymph_nodes || null,
+         }
+         await saveStomatognathicExam(slug, patientId, examData)
        }} className="space-y-6">
         
         <div className="card bg-white border border-gray-100 shadow-sm mx-4 md:mx-0 overflow-hidden rounded-[32px]">

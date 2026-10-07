@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { getPatients, createAppointment } from '../../actions'
-import { ArrowLeft, User, Calendar, Clock, ClipboardList, Save, X, AlertCircle } from 'lucide-react'
+import { ArrowLeft, User, Calendar, Clock, ClipboardList, Save, X, AlertCircle, LucideIcon } from 'lucide-react'
 
 interface Props {
   params: Promise<{ slug: string }>
@@ -169,7 +169,7 @@ export default async function NewAppointmentPage({ params }: Props) {
   )
 }
 
-function FormGroup({ label, icon: Icon, children }: { label: string, icon: any, children: React.ReactNode }) {
+function FormGroup({ label, icon: Icon, children }: { label: string, icon: LucideIcon, children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 flex items-center gap-1.5">

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { getPatients } from '../actions'
-import { Users, Plus, Search, User, CreditCard, ChevronRight, Phone } from 'lucide-react'
+import { Users, Plus, Search, CreditCard, ChevronRight, Phone } from 'lucide-react'
 
 interface Props {
   params: Promise<{ slug: string }>

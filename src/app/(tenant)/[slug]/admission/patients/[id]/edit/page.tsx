@@ -1,6 +1,6 @@
 import { getPatient, updatePatient } from '../../../actions'
 import Link from 'next/link'
-import { ArrowLeft, User, CreditCard, Phone, Mail, MapPin, Calendar, Save, X, Activity, FileText } from 'lucide-react'
+import { ArrowLeft, User, CreditCard, Phone, Mail, MapPin, Calendar, Save, X, Activity, FileText, LucideIcon } from 'lucide-react'
 
 interface Props {
   params: Promise<{ slug: string; id: string }>
@@ -226,7 +226,7 @@ export default async function EditPatientPage({ params }: Props) {
   )
 }
 
-function FormGroup({ label, icon: Icon, children }: { label: string, icon: any, children: React.ReactNode }) {
+function FormGroup({ label, icon: Icon, children }: { label: string, icon: LucideIcon, children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2 flex items-center gap-1.5">

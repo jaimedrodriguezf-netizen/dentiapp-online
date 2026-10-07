@@ -7,7 +7,6 @@ import {
   User, BookOpen, Syringe, GraduationCap, ArrowUp, Grid3X3,
   Plus, Trash2, Zap
 } from 'lucide-react'
-import CIESearch from './CIESearch'
 import VitalSignsSection from './VitalSignsSection'
 import MedicalHistoryCheckboxes from './MedicalHistoryCheckboxes'
 import ComplementaryExams from './ComplementaryExams'
@@ -20,15 +19,7 @@ import {
 } from './OralExamSection'
 import { isDeciduous } from './OdontogramSVG'
 import { motion, AnimatePresence } from 'framer-motion'
-import InteractiveToothSelector from './InteractiveToothSelector'
 import DiagnosesListManager from './DiagnosesListManager'
-
-const FDI_TEETH = [
-  18, 17, 16, 15, 14, 13, 12, 11, 21, 22, 23, 24, 25, 26, 27, 28,
-  55, 54, 53, 52, 51, 61, 62, 63, 64, 65,
-  85, 84, 83, 82, 81, 71, 72, 73, 74, 75,
-  48, 47, 46, 45, 44, 43, 42, 41, 31, 32, 33, 34, 35, 36, 37, 38
-]
 
 const SECTIONS = [
   { id: 'patient', label: 'Motivo y Enfermedad', icon: User },
@@ -147,7 +138,6 @@ export default function Form033Wizard({
   defaultPersonalHistory,
   defaultFamilyHistory,
   defaultVitalSigns,
-  patientId,
   patientName,
   patientGender,
 }: Props) {
@@ -172,18 +162,15 @@ export default function Form033Wizard({
       const isDec = isDeciduous(tooth.tooth_number)
 
       let hasCaries = false
-      let isMissing = false
       let isFilled = false
 
       if (tooth.surfaces) {
         const surfaceStatuses = Object.values(tooth.surfaces)
         hasCaries = surfaceStatuses.includes('caries')
         isFilled = surfaceStatuses.includes('filling')
-        isMissing = tooth.status === 'extraction_done' || tooth.status === 'extraction_indicated'
       } else {
         hasCaries = tooth.status === 'caries'
         isFilled = tooth.status === 'filling'
-        isMissing = tooth.status === 'extraction_done' || tooth.status === 'extraction_indicated'
       }
 
       if (isDec) {
@@ -794,35 +781,6 @@ function SubSection({ title, children }: { title: string; children: React.ReactN
     <div className="bg-gray-50/30 p-5 rounded-[24px] border border-gray-100">
       <h4 className="text-[11px] font-black text-gray-500 uppercase tracking-widest mb-4">{title}</h4>
       {children}
-    </div>
-  )
-}
-
-function DiagnosisSelector() {
-  const [selection, setSelection] = useState({ code: '', desc: '' })
-  
-  return (
-    <div className="space-y-4">
-      <CIESearch
-        onSelect={(code, desc) => setSelection({ code, desc })}
-      />
-      {selection.code && (
-        <div className="p-3 bg-blue-50 rounded-xl border border-blue-100 flex items-center justify-between animate-in fade-in slide-in-from-top-1">
-          <div>
-            <span className="text-[10px] font-black text-blue-600 block uppercase">Seleccionado:</span>
-            <span className="text-xs font-bold text-blue-900">{selection.code} - {selection.desc}</span>
-          </div>
-          <button 
-            type="button" 
-            onClick={() => setSelection({ code: '', desc: '' })}
-            className="text-[10px] font-black text-blue-400 hover:text-blue-600 uppercase"
-          >
-            Cambiar
-          </button>
-        </div>
-      )}
-      <input name="diagnosis_code" type="hidden" value={selection.code} readOnly />
-      <input name="diagnosis_description" type="hidden" value={selection.desc} readOnly />
     </div>
   )
 }

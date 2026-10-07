@@ -98,11 +98,6 @@ export default function WeeklyCalendar({ slug, appointments, currentDate }: Prop
           {days.map((date, i) => {
             const dateStr = formatDate(date)
             const isToday = dateStr === today
-            const appointmentsOnDay = appointments.filter(a => {
-              // In weekly view, we'd need appointments with dates.
-              // For now, show count if the appointment date matches.
-              return true // placeholder — will filter by actual date in real data
-            })
             return (
               <div
                 key={i}

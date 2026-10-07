@@ -11,7 +11,7 @@ interface VitalSignsData {
   height: string | null
 }
 
-interface StomatognathicExamData {
+export interface StomatognathicExamData {
   lips: string | null
   cheeks: string | null
   maxilla: string | null

@@ -243,6 +243,7 @@ export default function SupportFeedbackModal({ isOpen, onClose, slug, userRole }
                   </div>
                 ) : (
                   <div className="relative rounded-2xl border border-gray-200 overflow-hidden bg-slate-50 flex items-center justify-center p-2 group">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img 
                       src={screenshotBase64} 
                       alt="Screenshot de soporte" 

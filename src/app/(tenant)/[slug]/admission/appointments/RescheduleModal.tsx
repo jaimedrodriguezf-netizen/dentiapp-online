@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { rescheduleAppointment, getOperatingHours } from '../../settings/actions'
 import type { OperatingHour } from '../../settings/actions'
-import { CalendarDays, Clock, Loader2, X, ChevronRight } from 'lucide-react'
+import { Loader2, X, ChevronRight } from 'lucide-react'
 
 interface Props {
   slug: string
@@ -20,7 +20,7 @@ const TIME_SLOTS = [
 
 export default function RescheduleModal({ slug, appointmentId, currentDate, currentTime, onClose }: Props) {
   const [selectedDate, setSelectedDate] = useState(currentDate)
-  const [selectedTime, setSelectedTime] = useState<string | null>(null)
+  const [selectedTime, setSelectedTime] = useState<string | null>(currentTime || null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [operatingHours, setOperatingHours] = useState<OperatingHour[]>([])
