@@ -15,4 +15,4 @@
 - [x] Task 3: Limitar tamaño de payload y memoria en subida de capturas base64 (`support/actions.ts`). (commit: 0c1c5d2)
 - [x] Task 4: Validar y sanitizar entradas en agendamiento público (`public/actions.ts`). (commit: e7d8bfb)
 - [x] Task 5: Agregar `requireAuth` explícito en `rescheduleAppointment` (`settings/actions.ts`). (commit: 368eb47)
-- [ ] Task 6: Configurar MCP local para el proyecto en `.pi/mcp.json`.
+- [x] Task 6: Configurar MCP local para el proyecto en `.pi/mcp.json`. (commit: 71b3287)
